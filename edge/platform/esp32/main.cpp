@@ -34,33 +34,48 @@ static telemetry_ring_buffer_t s_buffer;
 static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
 
-// NTP による現在時刻同期関数 (TLS 証明書の有効期限チェックに必須)
-static void sync_time_via_ntp() {
-    Serial.print("[NTP] Synchronizing current time with NTP server...");
-    configTime(9 * 3600, 0, "pool.ntp.org", "time.google.com");
+/**
+ * @brief 爆速 NTP 時刻同期 (DNS解決スキップ・IP直指定 & Deep Sleep時 0ms スキップ)
+ */
+static void sync_time_via_fast_ntp() {
     time_t now = time(nullptr);
+
+    // 1. Deep Sleep からの起床時: 内部 RTC がすでに正確な時刻を保持していれば即座にスキップ (所要時間: 0ms)
+    if (now >= 1700000000) {
+        Serial.printf("[NTP FAST] RTC clock already valid (%lu). Skipping NTP (0ms)!\n", (unsigned long)now);
+        return;
+    }
+
+    // 2. 初回起動時 (電源投入直後): IPアドレス直接指定により DNS 名前解決（数秒の遅延）を完全スキップ
+    //   - IP 1: 133.243.238.163 (NICT 日本標準時 NTP サーバー)
+    //   - IP 2: 216.239.35.0    (Google Public NTP)
+    //   - IP 3: 162.159.200.1   (Cloudflare NTP)
+    Serial.print("[NTP FAST] Synchronizing via direct IP (DNS-free: NICT 133.243.238.163 / Google 216.239.35.0)...");
+    configTime(9 * 3600, 0, "133.243.238.163", "216.239.35.0", "162.159.200.1");
+
     int retry = 0;
-    while (now < 1700000000 && retry < 20) { // 2023年以降になるまで待機
-        delay(500);
-        Serial.print(".");
+    while (now < 1700000000 && retry < 40) { // 50ms ごとにチェック (最大2秒)
+        delay(50);
         now = time(nullptr);
         retry++;
     }
+
     if (now >= 1700000000) {
         struct tm timeinfo;
         gmtime_r(&now, &timeinfo);
-        Serial.printf("\n[NTP] Time Synchronized! UTC: %04d-%02d-%02d %02d:%02d:%02d\n",
+        Serial.printf(" Done in %d ms!\n[NTP FAST] Synchronized UTC: %04d-%02d-%02d %02d:%02d:%02d\n",
+            retry * 50,
             timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
             timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
     } else {
-        Serial.println("\n[NTP] Warning: Time sync timeout (using internal clock)");
+        Serial.println("\n[NTP FAST] Warning: Fast NTP timeout, fallback to estimated clock");
     }
 }
 
 void setup() {
-    // 1. ハードウェア UART シリアルの初期化 (確実にログを流すため2秒待機)
+    // 1. ハードウェア UART シリアルの初期化 (確実にログを流すため1秒待機)
     Serial.begin(115200);
-    delay(2000);
+    delay(1000);
 
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH); // LED点灯
@@ -70,7 +85,7 @@ void setup() {
     Serial.println("\n");
     Serial.println("====================================================");
     Serial.println("  >>> IoT Platform Edge Firmware Starting! <<<     ");
-    Serial.println("  Hardware: Freenove ESP32-S3 WROOM                 ");
+    Serial.println("  Hardware: Freenove ESP32-S3 WROOM (Fast NTP)      ");
     Serial.printf ("  Boot Count: %u | Free Heap: %u bytes\n", s_boot_count, esp_get_free_heap_size());
     Serial.println("====================================================");
 
@@ -90,7 +105,7 @@ void setup() {
 
     int retry = 0;
     while (WiFi.status() != WL_CONNECTED && retry < 20) {
-        delay(500);
+        delay(200);
         Serial.print(".");
         retry++;
     }
@@ -99,8 +114,8 @@ void setup() {
         Serial.println("\n[WIFI] Connected Successfully!");
         Serial.printf("[WIFI] IP Address: %s | RSSI: %d dBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
 
-        // 初回または時刻未同期時に NTP 同期を実施
-        sync_time_via_ntp();
+        // 爆速 NTP 同期 (初回のみ IP 直指定で同期、2回目以降は 0ms)
+        sync_time_via_fast_ntp();
     } else {
         Serial.println("\n[WIFI] Connection Failed. Buffering offline!");
     }
