@@ -78,12 +78,14 @@ type ApiResponse struct {
 
 // DeviceState 管理用デバイスエンティティ
 type DeviceState struct {
-	DeviceID        string    `json:"device_id"`
-	FirmwareVersion string    `json:"firmware_version"`
-	LastSeenAt      time.Time `json:"last_seen_at"`
-	LastSeqNo       uint32    `json:"last_seq_no"`
-	LastMetrics     MetricsData `json:"last_metrics"`
-	LastStatus      *DeviceStatus `json:"last_status"`
-	Status          string    `json:"status"`
-	TotalTelemetries uint64   `json:"total_telemetries"`
+	DeviceID             string    `json:"device_id"`
+	FirmwareVersion      string    `json:"firmware_version"`
+	LastSeenAt           time.Time `json:"last_seen_at"`
+	LastSeqNo            uint32    `json:"last_seq_no"`
+	LastMetrics          MetricsData `json:"last_metrics"`
+	LastStatus           *DeviceStatus `json:"last_status"`
+	Status               string    `json:"status"`
+	TotalTelemetries     uint64   `json:"total_telemetries"`
+	PendingCommandsCount int      `json:"pending_commands_count"`
 }
+

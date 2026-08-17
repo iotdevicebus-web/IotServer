@@ -265,6 +265,17 @@
                     <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
                         対象デバイス: <strong id="cmd-target-device" style="color: var(--text-primary);">選択してください</strong>
                     </div>
+
+                    <!-- コマンド待機中インジケータ -->
+                    <div id="cmd-pending-box" style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                        <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; animation: pulse 1.5s infinite;"></span>
+                        <span id="cmd-pending-text">⏳ コマンド送信待ちです (次回起床時に配信)</span>
+                    </div>
+
+                    <div id="cmd-success-box" style="display: none; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px;">
+                        ✅ コマンドがエッジデバイスに送信・適用されました
+                    </div>
+
                     <div class="cmd-actions">
                         <button class="btn btn-cyan" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 10})">⏱ スリープ10秒に変更</button>
                         <button class="btn btn-amber" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 60})">⏱ スリープ60秒に変更</button>
@@ -274,6 +285,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- 右列: 時系列チャート -->
         <div class="card">
@@ -312,11 +324,12 @@
         let selectedDevice = null;
         let tempChartInstance = null;
         let batteryChartInstance = null;
+        let lastPendingCount = {};
 
         async function initDashboard() {
             initCharts();
             await fetchData();
-            setInterval(fetchData, 5000);
+            setInterval(fetchData, 2000); // 2秒間隔でリアルタイム更新
         }
 
         function showToast(msg) {
@@ -325,6 +338,7 @@
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 3500);
         }
+
 
         function initCharts() {
             const ctxTemp = document.getElementById('tempChart').getContext('2d');
@@ -431,13 +445,38 @@
                     fetchTelemetryHistory(d.device_id);
                 };
 
+                const pendingBadge = d.pending_commands_count > 0 ? 
+                    `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px;">⏳ 送信待ち (${d.pending_commands_count})</span>` : '';
+
                 tr.innerHTML = `
-                    <td style="font-weight: 600;">${d.device_id}</td>
+                    <td style="font-weight: 600;">${d.device_id}${pendingBadge}</td>
                     <td><span style="background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${d.firmware_version}</span></td>
                     <td><span class="badge-online">${d.status}</span></td>
                     <td>${d.total_telemetries}</td>
                 `;
                 tbody.appendChild(tr);
+
+                // 選択中のデバイスのコマンド待機状態の更新
+                if (d.device_id === selectedDevice) {
+                    const pendingBox = document.getElementById('cmd-pending-box');
+                    const successBox = document.getElementById('cmd-success-box');
+                    
+                    if (d.pending_commands_count > 0) {
+                        pendingBox.style.display = 'flex';
+                        successBox.style.display = 'none';
+                        document.getElementById('cmd-pending-text').innerText = `⏳ コマンド送信待ちです (エッジの次回起床時に配信されます: ${d.pending_commands_count}件)`;
+                    } else {
+                        if (lastPendingCount[d.device_id] > 0) {
+                            // 送信完了通知を表示
+                            pendingBox.style.display = 'none';
+                            successBox.style.display = 'block';
+                            setTimeout(() => { successBox.style.display = 'none'; }, 4000);
+                        } else {
+                            pendingBox.style.display = 'none';
+                        }
+                    }
+                    lastPendingCount[d.device_id] = d.pending_commands_count;
+                }
             });
         }
 
@@ -478,6 +517,13 @@
                 return;
             }
             try {
+                // UI に即座に「コマンド送信待ちです」を表示
+                const pendingBox = document.getElementById('cmd-pending-box');
+                const successBox = document.getElementById('cmd-success-box');
+                pendingBox.style.display = 'flex';
+                successBox.style.display = 'none';
+                document.getElementById('cmd-pending-text').innerText = "⏳ コマンド送信待ちです (エッジの次回起床時に自動配信されます)";
+
                 const res = await fetch('/api/v1/commands', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -489,9 +535,11 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showToast(`✅ コマンド [${action}] をキューに登録しました (ID: ${data.command_id})`);
+                    showToast(`⏳ コマンド送信待ち: [${action}] をキューに登録しました`);
+                    await fetchData();
                 } else {
                     alert(`コマンド送信エラー: ${data.message}`);
+                    pendingBox.style.display = 'none';
                 }
             } catch (err) {
                 alert(`送信失敗: ${err}`);
@@ -499,6 +547,7 @@
         }
 
         window.onload = initDashboard;
+
     </script>
 </body>
 </html>

@@ -225,9 +225,10 @@ func (r *SQLRepository) GetDevice(deviceID string) (*models.DeviceState, error) 
 
 func (r *SQLRepository) ListDevices() []*models.DeviceState {
 	rows, err := r.db.Query(`
-		SELECT device_id, firmware_version, status, last_seq_no, last_seen_at, total_telemetries,
-		       last_temp, last_humidity, last_voltage, last_battery_pct, last_rssi
-		FROM devices ORDER BY last_seen_at DESC
+		SELECT d.device_id, d.firmware_version, d.status, d.last_seq_no, d.last_seen_at, d.total_telemetries,
+		       d.last_temp, d.last_humidity, d.last_voltage, d.last_battery_pct, d.last_rssi,
+		       (SELECT COUNT(*) FROM commands c WHERE c.device_id = d.device_id AND c.status = 'PENDING') AS pending_count
+		FROM devices d ORDER BY d.last_seen_at DESC
 	`)
 	if err != nil {
 		log.Printf("[ERROR] ListDevices query failed: %v", err)
@@ -240,14 +241,17 @@ func (r *SQLRepository) ListDevices() []*models.DeviceState {
 		var d models.DeviceState
 		var lastTemp, lastHumi, lastVolt sql.NullFloat64
 		var lastBattPct, lastRSSI sql.NullInt64
+		var pendingCount int
 
 		if err := rows.Scan(
 			&d.DeviceID, &d.FirmwareVersion, &d.Status, &d.LastSeqNo, &d.LastSeenAt, &d.TotalTelemetries,
 			&lastTemp, &lastHumi, &lastVolt, &lastBattPct, &lastRSSI,
+			&pendingCount,
 		); err != nil {
 			continue
 		}
 
+		d.PendingCommandsCount = pendingCount
 		d.LastMetrics = models.MetricsData{
 			Temperature:     lastTemp.Float64,
 			Humidity:        lastHumi.Float64,
@@ -258,9 +262,9 @@ func (r *SQLRepository) ListDevices() []*models.DeviceState {
 
 		list = append(list, &d)
 	}
-
 	return list
 }
+
 
 func (r *SQLRepository) GetTelemetryHistory(deviceID string, limit int) ([]models.TelemetryPayload, error) {
 	if limit <= 0 {
