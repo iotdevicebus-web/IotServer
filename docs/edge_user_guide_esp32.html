@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32-S3 エッジファームウェア 取扱説明書・導入マニュアル</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #ea580c;
+            --primary-glow: rgba(234, 88, 12, 0.2);
+            --bg: #110e19;
+            --surface: #1c1829;
+            --surface-hover: #2a243d;
+            --border: #2a243d;
+            --border-highlight: #433a61;
+            --text-main: #fdfdfd;
+            --text-muted: #9ca3af;
+            --accent-orange: #fb923c;
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --code-bg: #09070e;
+            --sidebar-width: 290px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.75;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* サイドバー目次 */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding: 24px 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar .brand {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sidebar .doc-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #sidebar ul {
+            list-style: none;
+        }
+
+        #sidebar li {
+            margin-bottom: 4px;
+        }
+
+        #sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            display: block;
+            padding: 7px 12px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        #sidebar a:hover {
+            color: #ffffff;
+            background-color: var(--surface-hover);
+        }
+
+        /* メインコンテンツ */
+        #main-content {
+            flex: 1;
+            padding: 48px 64px;
+            max-width: 1140px;
+            overflow-y: auto;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            background: var(--primary-glow);
+            color: #fdba74;
+            border: 1px solid rgba(234, 88, 12, 0.4);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-bar {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 36px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.2em;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        p, ul, ol {
+            margin-bottom: 16px;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* テーブル */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        th {
+            background-color: rgba(9, 7, 14, 0.6);
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: rgba(42, 36, 61, 0.5);
+        }
+
+        /* コードブロック */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-highlight);
+            border-radius: 8px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: rgba(9, 7, 14, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fb923c;
+            font-size: 0.85em;
+            border: 1px solid rgba(42, 36, 61, 0.8);
+        }
+
+        /* カード・ボックス */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--accent-amber);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .mermaid {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            #sidebar { display: none; }
+            #main-content { padding: 0; max-width: 100%; }
+            table, pre, .mermaid, .card { border: 1px solid #ccc; background: white; color: black; }
+            h1, h2, h3 { color: black; }
+            code { color: #111; background: #eee; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- サイドバー目次 -->
+    <nav id="sidebar">
+        <div class="brand">🔥 ESP32-S3 Edge</div>
+        <div class="doc-title">Embedded Manual</div>
+        <ul>
+            <li><a href="#sec-1">1. ESP32-S3 版エッジ概要</a></li>
+            <li><a href="#sec-2">2. ハードウェア構成 (Freenove)</a></li>
+            <li><a href="#sec-3">3. ピンアサイン & 結線仕様</a></li>
+            <li><a href="#sec-4">4. 開発環境の準備 (VS Code)</a></li>
+            <li><a href="#sec-5">5. Wi-Fi 設定 & ビルド手順</a></li>
+            <li><a href="#sec-6">6. Flash 書込 & シリアルモニタ</a></li>
+            <li><a href="#sec-7">7. ログファイル自動保存機能</a></li>
+            <li><a href="#sec-8">8. Deep Sleep & 省電力設計</a></li>
+            <li><a href="#sec-9">9. トラブルシューティング (Q&A)</a></li>
+        </ul>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+        <div class="badge-tag">ESPRESSIF ESP32-S3 MANUAL</div>
+        <h1>ESP32-S3 版エッジファームウェア 取扱説明書・導入マニュアル</h1>
+        <div class="meta-bar">
+            <span><strong>マニュアル番号:</strong> MAN-ESP32S3-2026-V1</span>
+            <span><strong>対象ボード:</strong> Freenove ESP32-S3 WROOM / DevKitC-1</span>
+            <span><strong>開発環境:</strong> VS Code + PlatformIO</span>
+            <span><strong>更新日:</strong> 2026-08-17</span>
+        </div>
+
+        <!-- 1. ESP32-S3 版エッジ概要 -->
+        <section id="sec-1">
+            <h2>1. ESP32-S3 版エッジ概要</h2>
+            <p>本ファームウェアは、Espressif 社の <strong>ESP32-S3（デュアルコア Xtensa LX7 240MHz）</strong> に向けたエッジ実装です。内蔵 Wi-Fi と暗号ハードウェアアクセラレータを活用し、<strong>X.509 mTLS 相互認証・NTP 自動時刻同期・Protocol Buffers v3 通信・Deep Sleep 省電力制御</strong> を一気通貫で実行します。</p>
+
+            <div class="card">
+                <h3>主な特徴とスペック</h3>
+                <ul>
+                    <li><strong>ゼロトラスト mTLS 相互認証:</strong> デバイス固有証明書（<code>DEV-ESP32-001</code>）による安全な暗号化通信。</li>
+                    <li><strong>NTP 自動時刻同期:</strong> 電源投入時に SNTP（<code>pool.ntp.org</code>）と同期し、証明書の有効期間を厳格判定。</li>
+                    <li><strong>超軽量 Protocol Buffers v3:</strong> データを <strong>70 Bytes（約 76% 削減）</strong> に圧縮して高速送信。</li>
+                    <li><strong>32件オフラインリングバッファ:</strong> 電波圏外時でもデータを端末内に保持し、復帰時に自動フラッシュ送信。</li>
+                    <li><strong>Deep Sleep 制御:</strong> 通信完了後に自動スリープに入り、バッテリ寿命を数年単位に延伸。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 2. ハードウェア構成 -->
+        <section id="sec-2">
+            <h2>2. ハードウェア構成 (Freenove ESP32-S3 WROOM)</h2>
+            <div class="mermaid">
+graph LR
+    subgraph "Freenove ESP32-S3 WROOM"
+        MCU["ESP32-S3 Core<br/>(240MHz, 8MB Flash)"]
+        UART_PORT["UART Type-C ポート<br/>(CH340: 通常書込 & ログ)"]
+        USB_PORT["USB Type-C ポート<br/>(内蔵 USB-OTG/JTAG)"]
+        LED["WS2812 RGB LED (GPIO 48)"]
+        BOOT["BOOT ボタン (GPIO 0)"]
+        RST["RST ボタン (Reset)"]
+    end
+
+    subgraph "外部ペリフェラル"
+        SHT["I2C センサ (SHT31: GPIO 8/9)"]
+        ADC["バッテリ分圧回路 (GPIO 1)"]
+    end
+
+    UART_PORT --- MCU
+    USB_PORT --- MCU
+    MCU --- LED
+    MCU --- BOOT
+    MCU --- RST
+    MCU -- "I2C" --> SHT
+    MCU -- "ADC1" --> ADC
+            </div>
+
+            <div class="alert-success">
+                <strong>PC接続時の推奨ポート:</strong><br>
+                Freenove ボードには 2つの USB ポートがあります。ファームウェア書き込みおよびシリアルログの確認には、必ず <strong>「UART」と印字された側の Type-C ポート</strong> を使用してください。
+            </div>
+        </section>
+
+        <!-- 3. ピンアサイン & 結線仕様 -->
+        <section id="sec-3">
+            <h2>3. ピンアサイン & 結線仕様</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ボード上のシルク</th>
+                        <th>ESP32-S3 GPIO</th>
+                        <th>ペリフェラル機能</th>
+                        <th>接続先 / 役割</th>
+                        <th>回路仕様・注意事項</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>`3V3`</strong></td>
+                        <td>3.3V</td>
+                        <td>3.3V 電源出力</td>
+                        <td>センサ (SHT31) の <code>VCC</code></td>
+                        <td>最大 500mA 出力</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`GND`</strong></td>
+                        <td>GND</td>
+                        <td>グランド</td>
+                        <td>センサ・分圧回路の <code>GND</code></td>
+                        <td>共通グランド</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`IO 8`</strong></td>
+                        <td><strong>GPIO 8</strong></td>
+                        <td><strong>I2C SDA</strong></td>
+                        <td>SHT31 / ATECC608A の <code>SDA</code></td>
+                        <td>4.7kΩ プルアップ抵抗推奨</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`IO 9`</strong></td>
+                        <td><strong>GPIO 9</strong></td>
+                        <td><strong>I2C SCL</strong></td>
+                        <td>SHT31 / ATECC608A の <code>SCL</code></td>
+                        <td>4.7kΩ プルアップ抵抗推奨</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`IO 1`</strong></td>
+                        <td><strong>GPIO 1</strong> (ADC1_CH0)</td>
+                        <td><strong>ADC1 バッテリ監視</strong></td>
+                        <td>LiPo バッテリ分圧回路の中間点</td>
+                        <td>1/2 分圧 (100kΩ + 100kΩ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`IO 4`</strong></td>
+                        <td><strong>GPIO 4</strong> (RTC_IO)</td>
+                        <td><strong>外部起床スイッチ</strong></td>
+                        <td>外部プッシュスイッチ / センサ</td>
+                        <td>Active Low (内部プルアップ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`IO 48`</strong></td>
+                        <td><strong>GPIO 48</strong></td>
+                        <td><strong>オンボード RGB LED</strong></td>
+                        <td>ステータス表示用 LED</td>
+                        <td>稼働時点灯・スリープ時消灯</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="alert-warning">
+                <strong>避けるべきピン（競合防止）:</strong><br>
+                <ul>
+                    <li><strong>GPIO 19, 20:</strong> 内蔵 USB ポートで使用するため、外部センサ等には接続しないでください。</li>
+                    <li><strong>GPIO 33 〜 37:</strong> 内部 Flash/PSRAM メモリで使用されています。</li>
+                    <li><strong>ADC2 系統 (GPIO 11〜20):</strong> Wi-Fi 通信中は無効化されるため、バッテリ監視には必ず <strong>ADC1 (GPIO 1)</strong> を使用してください。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 4. 開発環境の準備 -->
+        <section id="sec-4">
+            <h2>4. 開発環境の準備 (VS Code + PlatformIO)</h2>
+            <div class="card">
+                <ol>
+                    <li><strong>VS Code</strong> を起動し、拡張機能マーケットプレイス（<code>Ctrl + Shift + X</code>）を開きます。</li>
+                    <li>検索窓に <strong>`PlatformIO IDE`</strong> と入力してインストールします。</li>
+                    <li>VS Code でプロジェクトフォルダ <code>x:\iot-platform-project</code> を開きます。</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- 5. Wi-Fi 設定 & ビルド手順 -->
+        <section id="sec-5">
+            <h2>5. Wi-Fi 設定 & ビルド手順</h2>
+            <p><code>edge/platform/esp32/main.cpp</code> を開き、接続先 Wi-Fi 情報および管理サーバの IP アドレスを設定します。</p>
+
+            <pre><code>// edge/platform/esp32/main.cpp 内の設定箇所
+static const char *MY_WIFI_SSID = "ControlAdLab";       // Wi-Fi の SSID
+static const char *MY_WIFI_PASSWORD = "Your_Password";   // Wi-Fi パスワード
+
+// IoT サーバのアドレス (PC のローカル IP アドレス)
+static const char *MY_SERVER_HOST = "192.168.3.4";
+static const int MY_SERVER_PORT = 8443;</code></pre>
+
+            <p>VS Code 画面下部のステータスバーにある <strong>[ ✓ ] (Build ボタン)</strong> をクリックすると、数秒でコンパイルが完了（<code>[SUCCESS]</code>）します。</p>
+        </section>
+
+        <!-- 6. Flash 書込 & シリアルモニタ -->
+        <section id="sec-6">
+            <h2>6. Flash 書込 & シリアルモニタでの確認</h2>
+            <div class="card">
+                <h3>書き込み手順</h3>
+                <ol>
+                    <li>Freenove ESP32-S3 の <strong>「UART」ポート</strong> を USB ケーブルで PC に接続します。</li>
+                    <li>ステータスバーの <strong>[ → ] (Upload ボタン)</strong> をクリックして書き込みを開始します。</li>
+                    <li>書き込み完了後、ステータスバーの <strong>[ 🔌 ] (Serial Monitor ボタン)</strong> をクリックしてターミナルを開きます。</li>
+                </ol>
+            </div>
+
+            <h3>正常時のシリアル出力ログ例 (115200 bps)</h3>
+            <pre><code>====================================================
+  >>> IoT Platform Edge Firmware Starting! <<<     
+  Hardware: Freenove ESP32-S3 WROOM                 
+  Boot Count: 1 | Free Heap: 325468 bytes
+====================================================
+[SECURITY] Configuring X.509 mTLS Certificates...
+[WIFI] Connecting to SSID: 'ControlAdLab' ...
+[WIFI] Connected Successfully! IP: 192.168.3.65 | RSSI: -37 dBm
+[NTP] Synchronizing current time with NTP server...
+[NTP] Time Synchronized! UTC: 2026-08-17 05:30:00
+[SENSOR] Temp: 25.40 C | Humi: 58.00 % | Batt: 4.05 V (95 %)
+[PROTOBUF] Serialized payload size: 70 bytes (vs JSON ~290B)
+[HTTPS] Connecting to https://192.168.3.4:8443/api/v1/telemetry ...
+[HTTPS] >>> POST Success! Response Code: 200 <<<
+[HTTPS] Server Response Body:
+  {"status":"OK","message":"Telemetry accepted","sleep_interval_sec":60}
+====================================================
+[SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)
+====================================================</code></pre>
+        </section>
+
+        <!-- 7. ログファイル自動保存機能 -->
+        <section id="sec-7">
+            <h2>7. ログファイル自動保存機能</h2>
+            <p><code>platformio.ini</code> の <code>monitor_filters = log2file, time</code> 設定により、シリアルモニターを開いている間、すべての通信ログが自動的にファイルへ保存されます。</p>
+
+            <div class="card">
+                <p><strong>ログファイルの保存場所:</strong></p>
+                <code>x:\iot-platform-project\edge\platform\esp32\logs\device-monitor-YYMMDD-HHMMSS.log</code>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);">※ 過去の通信記録やエラー解析、バッテリ電圧推移の検証に活用できます。</p>
+            </div>
+        </section>
+
+        <!-- 8. Deep Sleep & 省電力設計 -->
+        <section id="sec-8">
+            <h2>8. Deep Sleep & 省電力設計</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>状態</th>
+                        <th>消費電流 (目安)</th>
+                        <th>動作内容</th>
+                        <th>復帰トリガー</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Active (Wi-Fi 送信中)</strong></td>
+                        <td>約 120 〜 240 mA</td>
+                        <td>センシング、Protobuf変換、mTLS HTTPS送信 (所要約 1.5秒)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Deep Sleep モード</strong></td>
+                        <td><strong>約 8 〜 10 µA</strong></td>
+                        <td>Wi-Fi/CPU停止、RTCタイマーのみ稼働</td>
+                        <td>RTC タイマー満了 / GPIO 4 割り込み</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 9. トラブルシューティング -->
+        <section id="sec-9">
+            <h2>9. トラブルシューティング (Q&A)</h2>
+            <div class="card">
+                <h3>Q. 書き込み時に <code>Connecting......._____</code> で停止します</h3>
+                <p><strong>A.</strong> ボード上の <strong>[BOOT] ボタンを押したまま [RST] ボタンを1回押し、そのあと [BOOT] を離して</strong> から、再度 Upload ボタンをクリックしてください。</p>
+            </div>
+
+            <div class="card">
+                <h3>Q. <code>(-9984) Certificate verification failed</code> が出ます</h3>
+                <p><strong>A.</strong> NTP 時刻同期が失敗している可能性があります。Wi-Fi ルーターがインターネットに接続されており、NTP（ポート 123）が通る環境かご確認ください。</p>
+            </div>
+
+            <div class="card">
+                <h3>Q. <code>POST Failed, Error: connection refused</code> が出ます</h3>
+                <p><strong>A.</strong> 管理サーバ（PC）が起動していないか、IP アドレスが異なっています。ターミナルで <code>cd server</code> ➔ <code>go run main.go</code> を実行してサーバを立ち上げ、PC の IP アドレスと <code>main.cpp</code> の <code>MY_SERVER_HOST</code> が一致しているかご確認ください。</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                darkMode: true,
+                background: '#1c1829',
+                primaryColor: '#ea580c',
+                primaryTextColor: '#ffffff',
+                lineColor: '#fb923c'
+            }
+        });
+    </script>
+</body>
+</html>
