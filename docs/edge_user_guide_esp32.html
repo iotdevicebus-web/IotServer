@@ -491,7 +491,7 @@ namespace AppConst {
   Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)
 ====================================================
 [INTERRUPT] GPIO 4 Interrupt DISABLED during active processing.
-[WAKEUP] ⏰ Periodic Timer Wakeup (15 s elapsed)
+[WAKEUP] ⏰ Periodic Timer Wakeup (10 s elapsed)
 [HARDWARE] >>> 8MB Octal PSRAM Detected & Active! Total: 8189 KB, Free: 8189 KB <<<
 [BUFFER] Allocated High-Capacity Ring Buffer on 8MB PSRAM (Capacity: 10000 records / ~507 KB)
 [CLOCK] Current System Time set to: 1786968000 (2026-08-17 12:00:00 UTC)
@@ -500,18 +500,20 @@ namespace AppConst {
 [WIFI] Connecting to SSID: 'ControlAdLab' (Event-Driven Mode, Zero-Polling) ...
 [WIFI] Connected Event Received! (Zero-Polling Instant Wake)
 [WIFI] IP Address: 192.168.3.65 | RSSI: -33 dBm
-[SENSOR] Temp: 24.70 C | Humi: 57.10 % | Batt: 4.03 V (94 %)
+[SENSOR] Temp: 24.70 C | Humi: 57.10 % | Batt: 4.03 V (94 %) | Interval: 10 s
 [PROTOBUF] Serialized payload size: 81 bytes (vs JSON ~290B)
 [HTTPS] Connecting to https://192.168.3.4:8443/api/v1/telemetry ...
 [HTTPS] >>> POST Success! Response Code: 200 <<<
 [HTTPS] Server Response Body:
-  {"status":"OK","message":"Telemetry accepted","server_time":1786947861,"sleep_interval_sec":60,"ota":{"available":true,"target_version":"1.1.0"}}
+  {"status":"OK","message":"Telemetry accepted","server_time":1786952324,"sleep_interval_sec":10,"commands":[]}
+[CONFIG] ⏱ >>> Server Updated Sleep Interval: 10 sec -> 10 sec <<<
 ====================================================
 [SLEEP] Enabling Wakeup Sources (Interrupts Re-Enabled via HAL):
-  1. Timer Wakeup: 15 seconds
+  1. Timer Wakeup: 10 seconds (Dynamically Set by Server/AppConst)
   2. External GPIO Wakeup: GPIO 4 (Active LOW)
 [SLEEP] Entering Deep Sleep... (Zzz)
 ====================================================</code></pre>
+
 
         </section>
 

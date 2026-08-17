@@ -416,7 +416,7 @@ sequenceDiagram
                     <tr>
                         <td><code>0</code></td>
                         <td><strong>Varint</strong></td>
-                        <td><code>timestamp</code>, <code>seq_no</code>, <code>boot_count</code>, <code>uptime</code></td>
+                        <td><code>timestamp</code>, <code>seq_no</code>, <code>boot_count</code>, <code>uptime</code>, <strong><code>interval_sec</code> (定期起動間隔)</strong></td>
                         <td>7ビットごとに分割、最上位ビット(MSB)で継続フラグ</td>
                     </tr>
                     <tr>
@@ -434,46 +434,47 @@ sequenceDiagram
                 </tbody>
             </table>
 
-            <h3>3.2 フィールドタグ (Field Tag) のバイナリ構造</h3>
-            <p>各フィールドの先頭 1バイトは <code>Tag = (Field_Number << 3) | Wire_Type</code> で表されます：</p>
-
+            <h3>3.2 フィールドタグ (Field Tag) のバイナリ構造 (MetricsData)</h3>
             <div class="byte-map">
-                <div class="byte-cell" style="flex: 2;"><span class="byte-tag">Field 1 (0x0A)</span><code>device_id</code> (LEN)</div>
-                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 2 (0x10)</span><code>timestamp</code> (VARINT)</div>
-                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 3 (0x18)</span><code>seq_no</code> (VARINT)</div>
-                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 6 (0x35)</span><code>temperature</code> (FIXED32)</div>
-                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 7 (0x3D)</span><code>humidity</code> (FIXED32)</div>
-                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 8 (0x45)</span><code>batt_volt</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 1 (0x0D)</span><code>temperature</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 2 (0x15)</span><code>humidity</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 3 (0x1D)</span><code>battery_voltage</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 4 (0x20)</span><code>battery_pct</code> (VARINT)</div>
+                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 5 (0x28)</span><code>rssi</code> (VARINT)</div>
+                <div class="byte-cell" style="flex: 1.5; background: rgba(6, 182, 212, 0.2);"><span class="byte-tag">Field 6 (0x30)</span><code>interval_sec</code> (VARINT)</div>
             </div>
         </section>
 
         <!-- 4. テレメトリ送信プロトコル -->
         <section id="sec-4">
             <h2>4. テレメトリ送信プロトコル (POST /api/v1/telemetry)</h2>
-            <p>エッジデバイスがスリープから目覚めた際に、測定データをサーバへ送信する主トランザクションです。</p>
+            <p>エッジデバイスがスリープから目覚めた際に、測定データおよび現在の定期起動間隔をサーバへ送信する主トランザクションです。</p>
 
             <h3>4.1 HTTP リクエスト仕様</h3>
             <pre><code>POST /api/v1/telemetry HTTP/1.1
 Host: 192.168.3.4:8443
 User-Agent: IoT-Edge/1.0.0 (ESP32-S3)
 Content-Type: application/x-protobuf
-Content-Length: 70
+Content-Length: 81
 Connection: close
 
-[... 70 Bytes of Protocol Buffers Binary Payload ...]</code></pre>
+[... 81 Bytes of Protocol Buffers Binary Payload including interval_sec ...]</code></pre>
 
             <h3>4.2 HTTP レスポンス仕様 (通常時 200 OK)</h3>
             <pre><code>HTTP/1.1 200 OK
 Content-Type: application/json
-Content-Length: 72
+Content-Length: 148
 Date: Mon, 17 Aug 2026 14:00:00 GMT
 
 {
   "status": "OK",
   "message": "Telemetry accepted",
-  "sleep_interval_sec": 60
+  "server_time": 1786952324,
+  "sleep_interval_sec": 10,
+  "commands": []
 }</code></pre>
         </section>
+
 
         <!-- 5. 双方向 C2 ピギーバック制御 -->
         <section id="sec-5">

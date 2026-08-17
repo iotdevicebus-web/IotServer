@@ -461,19 +461,29 @@
                     </tr>
                     <tr>
                         <td><strong>ファームウェア</strong></td>
-                        <td><code>1.0.0</code></td>
+                        <td><code>1.0.0-PSRAM</code></td>
                         <td>端末内部のプログラムのバージョンです。</td>
                     </tr>
                     <tr>
+                        <td><strong>起動間隔</strong></td>
+                        <td><span style="color: #0284c7; font-weight: 700;">⏱ 10秒 / 60秒</span></td>
+                        <td>エッジ端末が現在設定されている定期測定・送信スリープ間隔です。</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ステータス</strong></td>
+                        <td><span class="badge badge-green">ONLINE</span></td>
+                        <td>正常に定期通信が行われている状態です（送信待ちコマンドがある場合は <code>⏳ 送信待ち (1)</code> バッジが点灯）。</td>
+                    </tr>
+                    <tr>
                         <td><strong>電波強度 (RSSI)</strong></td>
-                        <td><code>-43 dBm</code></td>
+                        <td><code>-32 dBm</code></td>
                         <td>Wi-Fiの電波の強さです（-30〜-60が良好、-85以下は弱電波）。</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>③ リモートコマンド操作パネル (画面右下)</h3>
-            <p>プルダウンから端末と指示内容（設定変更、再起動など）を選んで「コマンド送信」を押すと、端末に遠隔指示が届きます。</p>
+            <h3>③ リモートコマンド操作パネル (画面左下)</h3>
+            <p>ボタンをクリックするだけで、遠隔地のセンサー端末に指示を送ることができます。コマンド発行後は <strong>「⏳ コマンド送信待ちです (X秒経過)」</strong> とリアルタイムにカウントアップされ、端末が次回起床して指示を適用した瞬間に <strong>「✅ 送信・適用完了 (所要時間: Y秒)」</strong> へと自動更新されます。</p>
         </section>
 
 
@@ -522,22 +532,36 @@
 
         <!-- 5. センサー端末の遠隔操作 -->
         <section id="sec-5">
-            <h2>🎮 5. センサー端末の遠隔操作 (リモート制御)</h2>
-            <p>画面右下の **「リモートコマンド送信パネル」** から、遠隔地のセンサー端末に指示を送ることができます。</p>
+            <h2>🎮 5. センサー端末の遠隔操作 (リモート制御 & 起動間隔変更)</h2>
+            <p>画面左下の **「リモートコマンド送信パネル」** から、遠隔地のセンサー端末に指示を送ることができます。</p>
 
             <div class="step-container">
                 <div class="step-item">
                     <div class="step-number">1</div>
                     <div class="step-content">
                         <h4>対象端末を選択</h4>
-                        <p>プルダウンメニューから指示を送りたい端末（例: <code>DEV-ESP32-001</code>）を選びます。</p>
+                        <p>デバイステーブルから指示を送りたい端末（例: <code>DEV-ESP32-001</code>）をクリックして選択します。パネル上に「現在の起動間隔」が表示されます。</p>
                     </div>
                 </div>
 
                 <div class="step-item">
                     <div class="step-number">2</div>
                     <div class="step-content">
-                        <h4>行いたい動作を選択</h4>
+                        <h4>変更したいボタンをクリック</h4>
+                        <p><strong>[ ⏱ スリープ10秒に変更 ]</strong> または <strong>[ ⏱ スリープ60秒に変更 ]</strong> をクリックします。</p>
+                    </div>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>リアルタイム経過表示 & 自動反映</h4>
+                        <p>ボタンを押すと直ちに <strong>「⏳ コマンド送信待ちです (1秒経過... 2秒経過...)」</strong> とカウントアップが始まります。端末がスリープから目覚めて通信した瞬間に設定が反映され、<strong>「✅ コマンドがエッジデバイスに送信・適用されました (所要時間: 8秒)」</strong> と通知されます。以降は設定した間隔が永続的に維持されます。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
                         <ul>
                             <li><strong>設定変更 (CONFIG_UPDATE):</strong> 送信間隔（スリープ時間）を10秒や60秒に変更します。</li>
                             <li><strong>再起動 (REBOOT):</strong> 端末を安全に再起動させます。</li>
