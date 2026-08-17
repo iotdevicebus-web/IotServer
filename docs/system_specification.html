@@ -477,10 +477,21 @@ graph LR
                     <tr>
                         <td><strong>暗号・相互認証</strong></td>
                         <td>ATECC608A (HSM) / mTLS</td>
-                        <td>X.509 mTLS (2048-bit RSA PKCS#1 / HSM連携)</td>
+                        <td>X.509 mTLS (2048-bit RSA PKCS#1 / DNS SAN対応)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>タスク同期 / 制御モデル</strong></td>
+                        <td>イベント駆動ステートマシン</td>
+                        <td><strong>FreeRTOS イベント駆動 (セマフォ待機・Zero-Polling)</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>定数・品質管理</strong></td>
+                        <td>C99 ヘッダ定数</td>
+                        <td><strong>AppConst.hpp (C++ constexpr 一元管理・QC規約準拠)</strong></td>
                     </tr>
                 </tbody>
             </table>
+
 
             <h3>状態遷移ステートマシン</h3>
             <div class="mermaid">

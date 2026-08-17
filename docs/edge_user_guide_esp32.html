@@ -323,11 +323,14 @@
                 <ul>
                     <li><strong>8MB Octal PSRAM (SDRAM) 大容量バッファ:</strong> 外部 8MB PSRAM を活用し、<strong>最大 10,000 件（数日分）</strong> のオフラインテレメトリを完全保持。</li>
                     <li><strong>ゼロトラスト mTLS 相互認証:</strong> デバイス固有証明書（<code>DEV-ESP32-001</code> / PKCS#1 RSA）による完全な双方向暗号化通信。</li>
-                    <li><strong>爆速 0ms クロックセット:</strong> 外部 NTP の遅延・遮断に依存せず、起動時に 0ms で有効期間内時刻を即時適用。</li>
+                    <li><strong>完全イベント駆動 (Zero-Polling):</strong> FreeRTOS バイナリセマフォによるハードウェア割り込み待機。ビジーウェイトやポーリング遅延を完全排除。</li>
+                    <li><strong>HAL 割り込みカプセル化 & マスク制御:</strong> 起床時に即座に割り込みを禁止し、処理完了時にスリープ復帰割り込みを再有効化（チャタリング誤動作ゼロ）。</li>
+                    <li><strong>AppConst.hpp 定数一元管理:</strong> ピン番号・タイムアウト・通信周期などのマジックナンバーを完全排除した高品質コード設計。</li>
                     <li><strong>超軽量 Protocol Buffers v3:</strong> データを <strong>81 Bytes（約 72% 削減）</strong> に圧縮して高速送信。</li>
                     <li><strong>Deep Sleep 制御:</strong> 通信完了後に自動スリープに入り、バッテリ寿命を数年単位に延伸。</li>
                 </ul>
             </div>
+
 
         </section>
 
