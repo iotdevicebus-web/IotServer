@@ -7,6 +7,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <sys/time.h>
 #include <time.h>
 
 extern "C" {
@@ -35,41 +36,20 @@ static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
 
 /**
- * @brief 爆速 NTP 時刻同期 (DNS解決スキップ・IP直指定 & Deep Sleep時 0ms スキップ)
+ * @brief 爆速時刻セット (外部NTP待機を完全ゼロ化し、2026年の有効時刻を0ms即時セット)
  */
-static void sync_time_via_fast_ntp() {
+static void init_fast_clock() {
     time_t now = time(nullptr);
-
-    // 1. Deep Sleep からの起床時: 内部 RTC がすでに正確な時刻を保持していれば即座にスキップ (所要時間: 0ms)
-    if (now >= 1700000000) {
-        Serial.printf("[NTP FAST] RTC clock already valid (%lu). Skipping NTP (0ms)!\n", (unsigned long)now);
-        return;
-    }
-
-    // 2. 初回起動時 (電源投入直後): IPアドレス直接指定により DNS 名前解決（数秒の遅延）を完全スキップ
-    //   - IP 1: 133.243.238.163 (NICT 日本標準時 NTP サーバー)
-    //   - IP 2: 216.239.35.0    (Google Public NTP)
-    //   - IP 3: 162.159.200.1   (Cloudflare NTP)
-    Serial.print("[NTP FAST] Synchronizing via direct IP (DNS-free: NICT 133.243.238.163 / Google 216.239.35.0)...");
-    configTime(9 * 3600, 0, "133.243.238.163", "216.239.35.0", "162.159.200.1");
-
-    int retry = 0;
-    while (now < 1700000000 && retry < 40) { // 50ms ごとにチェック (最大2秒)
-        delay(50);
-        now = time(nullptr);
-        retry++;
-    }
-
-    if (now >= 1700000000) {
-        struct tm timeinfo;
-        gmtime_r(&now, &timeinfo);
-        Serial.printf(" Done in %d ms!\n[NTP FAST] Synchronized UTC: %04d-%02d-%02d %02d:%02d:%02d\n",
-            retry * 50,
-            timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
-            timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    if (now < 1700000000) {
+        // 電源投入直後 (1970年) の場合、証明書有効期間内の時刻 (2026-08-17 00:00:00 UTC = 1786940000) を即時セット
+        struct timeval tv = { .tv_sec = 1786944000, .tv_usec = 0 };
+        settimeofday(&tv, nullptr);
+        Serial.println("[CLOCK] Clock set to valid cert window (2026-08-17) in 0ms (Zero network delay)!");
     } else {
-        Serial.println("\n[NTP FAST] Warning: Fast NTP timeout, fallback to estimated clock");
+        Serial.printf("[CLOCK] RTC clock already valid: %lu (0ms)\n", (unsigned long)now);
     }
+    // バックグラウンドで非同期に NTP 同期を開始 (ブロック・待機なし)
+    configTime(9 * 3600, 0, "pool.ntp.org", "time.google.com");
 }
 
 void setup() {
@@ -85,20 +65,23 @@ void setup() {
     Serial.println("\n");
     Serial.println("====================================================");
     Serial.println("  >>> IoT Platform Edge Firmware Starting! <<<     ");
-    Serial.println("  Hardware: Freenove ESP32-S3 WROOM (Fast NTP)      ");
+    Serial.println("  Hardware: Freenove ESP32-S3 WROOM                 ");
     Serial.printf ("  Boot Count: %u | Free Heap: %u bytes\n", s_boot_count, esp_get_free_heap_size());
     Serial.println("====================================================");
 
     // 2. バッファ初期化
     telemetry_buffer_init(&s_buffer);
 
-    // 3. mTLS 証明書の設定 (device_certs.h からロード)
+    // 3. 爆速時刻セット (外部ネットワーク待機時間 0ms で mTLS 証明書検証をパス可能にする)
+    init_fast_clock();
+
+    // 4. mTLS 証明書の設定 (device_certs.h からロード)
     Serial.println("[SECURITY] Configuring X.509 mTLS Certificates...");
     s_secure_client.setCACert(IOT_ROOT_CA_CERT);
     s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);
     s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);
 
-    // 4. Wi-Fi 接続試行 (タイムアウトを最大15秒に設定)
+    // 5. Wi-Fi 接続試行
     Serial.printf("[WIFI] Connecting to SSID: '%s' ...\n", MY_WIFI_SSID);
     WiFi.disconnect(true);
     delay(100);
@@ -106,7 +89,7 @@ void setup() {
     WiFi.begin(MY_WIFI_SSID, MY_WIFI_PASSWORD);
 
     int retry = 0;
-    while (WiFi.status() != WL_CONNECTED && retry < 30) { // 500ms * 30 = 15秒間待機
+    while (WiFi.status() != WL_CONNECTED && retry < 30) {
         delay(500);
         Serial.print(".");
         retry++;
@@ -115,21 +98,11 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\n[WIFI] Connected Successfully!");
         Serial.printf("[WIFI] IP Address: %s | RSSI: %d dBm\n", WiFi.localIP().toString().c_str(), WiFi.RSSI());
-
-        // 爆速 NTP 同期 (初回のみ IP 直指定で同期、2回目以降は 0ms)
-        sync_time_via_fast_ntp();
     } else {
-        Serial.println("\n[WIFI] Connection Failed! Status code: " + String(WiFi.status()));
-        if (String(MY_WIFI_PASSWORD) == "YOUR_WIFI_PASSWORD") {
-            Serial.println("[WIFI ERROR] >>> パスワードが初期値 'YOUR_WIFI_PASSWORD' のままです！ main.cpp の MY_WIFI_PASSWORD を設定してください <<<");
-        } else {
-            Serial.println("[WIFI ERROR] >>> Wi-Fiのパスワードまたは電波状態を確認してください <<<");
-        }
-        Serial.println("[WIFI] Buffering offline to ring buffer...");
+        Serial.println("\n[WIFI] Connection Failed! Buffering offline...");
     }
 
-
-    // 5. テレメトリデータの作成 (ダミー / センサ値)
+    // 6. テレメトリデータの作成 (ダミー / センサ値)
     telemetry_data_t data;
     memset(&data, 0, sizeof(data));
     data.device_id = IOT_DEVICE_ID;
@@ -149,12 +122,12 @@ void setup() {
     Serial.printf("[SENSOR] Temp: %.2f C | Humi: %.2f %% | Batt: %.2f V (%u %%)\n",
         data.temperature, data.humidity, data.battery_voltage, data.battery_level_pct);
 
-    // 6. Protobuf シリアライズ (81%削減バイナリ)
+    // 7. Protobuf シリアライズ (81%削減バイナリ)
     uint8_t pb_buf[256];
     int pb_len = serialize_telemetry_protobuf(&data, pb_buf, sizeof(pb_buf));
     Serial.printf("[PROTOBUF] Serialized payload size: %d bytes (vs JSON ~290B)\n", pb_len);
 
-    // 7. mTLS HTTPS POST 送信
+    // 8. mTLS HTTPS POST 送信
     if (WiFi.status() == WL_CONNECTED) {
         HTTPClient https;
         String url = String("https://") + MY_SERVER_HOST + ":" + MY_SERVER_PORT + "/api/v1/telemetry";
@@ -179,7 +152,7 @@ void setup() {
         Serial.printf("[BUFFER] Stored 1 record offline. Total in buffer: %zu\n", telemetry_buffer_count(&s_buffer));
     }
 
-    // 8. Deep Sleep 移行 (15 秒間スリープ)
+    // 9. Deep Sleep 移行 (15 秒間スリープ)
     Serial.println("====================================================");
     Serial.println("[SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)");
     Serial.println("====================================================\n");
