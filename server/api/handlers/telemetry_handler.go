@@ -130,11 +130,21 @@ func (h *ApiHandler) HandleTelemetry(w http.ResponseWriter, r *http.Request) {
 		sleepIntervalSec = 300 // バッテリ低下時は間隔延長
 	}
 
-	// 4. 保留中リモートコマンドの取得
+	// 4. 保留中リモートコマンドの取得 & CONFIG_UPDATE からスリープ間隔を即時反映
 	pendingCmds, _ := h.repo.GetPendingCommands(payload.Header.DeviceID)
 	if len(pendingCmds) > 0 {
 		log.Printf("[COMMAND DISPATCH] Piggybacking %d remote commands to device %s", len(pendingCmds), payload.Header.DeviceID)
+		for _, cmd := range pendingCmds {
+			if cmd.Action == "CONFIG_UPDATE" && cmd.Params != nil {
+				if sVal, ok := cmd.Params["sleep_interval_sec"].(float64); ok && sVal > 0 {
+					sleepIntervalSec = uint32(sVal)
+					log.Printf("[CONFIG UPDATE] Dynamic Sleep Interval set to %d sec for device %s", sleepIntervalSec, payload.Header.DeviceID)
+				}
+			}
+		}
 	}
+
+
 
 	// 5. レスポンス返却
 	resp := models.ApiResponse{

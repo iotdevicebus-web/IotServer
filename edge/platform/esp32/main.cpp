@@ -35,6 +35,7 @@ typedef struct {
 static psram_telemetry_buffer_t s_psram_buffer;
 static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
+static RTC_DATA_ATTR uint32_t s_sleep_interval_sec = AppConst::DEEP_SLEEP_DURATION_SEC;
 static SemaphoreHandle_t s_wifi_event_sem = nullptr;
 
 /**
@@ -47,6 +48,7 @@ static void on_wifi_event(WiFiEvent_t event) {
         }
     }
 }
+
 
 /**
  * @brief 8MB PSRAM 大容量バッファの初期化 (Callee 側デバッグライト配置)
@@ -136,6 +138,54 @@ static bool connect_wifi_event_driven() {
 }
 
 /**
+ * @brief サーバレスポンスからスリープ秒数およびリモートコマンドを解析・適用
+ */
+static void process_server_response(const String &resp) {
+    // 1. トップレベルまたは C2 コマンド内の sleep_interval_sec の抽出
+    int keyPos = resp.indexOf("\"sleep_interval_sec\":");
+    if (keyPos >= 0) {
+        int valStart = keyPos + 21;
+        while (valStart < resp.length() && (resp[valStart] == ' ' || resp[valStart] == ':')) {
+            valStart++;
+        }
+        int valEnd = valStart;
+        while (valEnd < resp.length() && isDigit(resp[valEnd])) {
+            valEnd++;
+        }
+        if (valEnd > valStart) {
+            uint32_t newInterval = resp.substring(valStart, valEnd).toInt();
+            if (newInterval >= 1 && newInterval <= 86400) {
+                if (s_sleep_interval_sec != newInterval) {
+                    Serial.printf("[CONFIG] ⏱ >>> Server Updated Sleep Interval: %u sec -> %u sec <<<\n", 
+                        s_sleep_interval_sec, newInterval);
+                    s_sleep_interval_sec = newInterval;
+                }
+            }
+        }
+    }
+
+    // 2. コマンド ACK の返却 (command_id が含まれる場合)
+    int cmdIdPos = resp.indexOf("\"command_id\":\"");
+    if (cmdIdPos >= 0) {
+        int idStart = cmdIdPos + 14;
+        int idEnd = resp.indexOf("\"", idStart);
+        if (idEnd > idStart) {
+            String cmdId = resp.substring(idStart, idEnd);
+            Serial.printf("[C2 ACK] Acknowledging command ID: %s\n", cmdId.c_str());
+            
+            HTTPClient ackHttp;
+            String ackUrl = String("https://") + AppConst::SERVER_HOST + ":" + AppConst::SERVER_PORT + "/api/v1/commands/ack";
+            if (ackHttp.begin(s_secure_client, ackUrl)) {
+                ackHttp.addHeader("Content-Type", "application/json");
+                String ackJson = "{\"command_id\":\"" + cmdId + "\",\"device_id\":\"" + IOT_DEVICE_ID + "\",\"status\":\"SUCCESS\"}";
+                ackHttp.POST(ackJson);
+                ackHttp.end();
+            }
+        }
+    }
+}
+
+/**
  * @brief テレメトリの mTLS HTTPS 送信 (Callee 側デバッグライト配置)
  */
 static void send_telemetry_payload(const telemetry_data_t *data, bool is_connected) {
@@ -156,6 +206,7 @@ static void send_telemetry_payload(const telemetry_data_t *data, bool is_connect
                 Serial.printf("[HTTPS] >>> POST Success! Response Code: %d <<<\n", httpCode);
                 String resp = https.getString();
                 Serial.println("[HTTPS] Server Response Body:\n  " + resp);
+                process_server_response(resp); // サーバからのスリープ秒数・コマンドを反映
             } else {
                 Serial.printf("[HTTPS] POST Failed, Error: %s\n", https.errorToString(httpCode).c_str());
                 psram_buffer_push(data);
@@ -176,18 +227,19 @@ static void send_telemetry_payload(const telemetry_data_t *data, bool is_connect
 static void enter_power_saving_sleep() {
     Serial.println("====================================================");
     Serial.println("[SLEEP] Enabling Wakeup Sources (Interrupts Re-Enabled via HAL):");
-    Serial.printf ("  1. Timer Wakeup: %u seconds\n", AppConst::DEEP_SLEEP_DURATION_SEC);
+    Serial.printf ("  1. Timer Wakeup: %u seconds (Dynamically Set by Server/AppConst)\n", s_sleep_interval_sec);
     Serial.printf ("  2. External GPIO Wakeup: GPIO %u (Active LOW)\n", AppConst::PIN_WAKEUP_BUTTON);
     Serial.println("[SLEEP] Entering Deep Sleep... (Zzz)");
     Serial.println("====================================================\n");
     Serial.flush();
     digitalWrite(AppConst::PIN_STATUS_LED, LOW); // LED消灯
 
-    // 【全処理完了】外部割り込み & タイマー起床を有効化してスリープ
+    // 【全処理完了】外部割り込み & 動的タイマー秒数でスリープ
     hal_sleep_enable_gpio_wakeup((hal_gpio_pin_t)AppConst::PIN_WAKEUP_BUTTON, HAL_GPIO_INTR_LOW_LEVEL);
-    hal_sleep_enable_timer_wakeup(AppConst::DEEP_SLEEP_DURATION_SEC);
+    hal_sleep_enable_timer_wakeup(s_sleep_interval_sec);
     hal_sleep_enter(HAL_SLEEP_MODE_DEEP);
 }
+
 
 void setup() {
     // 1. ハードウェア UART シリアル初期化 & ステータス LED 点灯
@@ -209,8 +261,9 @@ void setup() {
             Serial.printf("[WAKEUP] 🔔 >>> External GPIO %u Interrupt Wakeup Triggered! <<<\n", AppConst::PIN_WAKEUP_BUTTON);
             break;
         case HAL_WAKEUP_CAUSE_TIMER:
-            Serial.printf("[WAKEUP] ⏰ Periodic Timer Wakeup (%u s elapsed)\n", AppConst::DEEP_SLEEP_DURATION_SEC);
+            Serial.printf("[WAKEUP] ⏰ Periodic Timer Wakeup (%u s elapsed)\n", s_sleep_interval_sec);
             break;
+
         default:
             Serial.printf("[WAKEUP] ⚡ Initial Power-On Reset (Cause: %d)\n", wakeup_cause);
             break;
