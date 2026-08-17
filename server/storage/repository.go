@@ -29,6 +29,7 @@ type InMemoryRepository struct {
 	devices     map[string]*models.DeviceState
 	telemetries map[string][]models.TelemetryPayload
 	events      map[string][]models.EventPayload
+	commands    map[string][]*models.DeviceCommand
 }
 
 func NewInMemoryRepository() *InMemoryRepository {
@@ -36,6 +37,7 @@ func NewInMemoryRepository() *InMemoryRepository {
 		devices:     make(map[string]*models.DeviceState),
 		telemetries: make(map[string][]models.TelemetryPayload),
 		events:      make(map[string][]models.EventPayload),
+		commands:    make(map[string][]*models.DeviceCommand),
 	}
 }
 
@@ -110,15 +112,39 @@ func (r *InMemoryRepository) GetTelemetryHistory(deviceID string, limit int) ([]
 }
 
 func (r *InMemoryRepository) QueueCommand(deviceID string, cmd *models.DeviceCommand) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.commands[deviceID] = append(r.commands[deviceID], cmd)
 	return nil
 }
 
 func (r *InMemoryRepository) GetPendingCommands(deviceID string) ([]models.DeviceCommand, error) {
-	return []models.DeviceCommand{}, nil
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	cmds, exists := r.commands[deviceID]
+	if !exists {
+		return []models.DeviceCommand{}, nil
+	}
+	var res []models.DeviceCommand
+	for _, c := range cmds {
+		res = append(res, *c)
+	}
+	return res, nil
 }
 
 func (r *InMemoryRepository) AckCommand(deviceID, commandID, result string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	cmds := r.commands[deviceID]
+	var remaining []*models.DeviceCommand
+	for _, c := range cmds {
+		if c.CommandID != commandID {
+			remaining = append(remaining, c)
+		}
+	}
+	r.commands[deviceID] = remaining
 	return nil
 }
+
 
 

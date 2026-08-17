@@ -51,6 +51,8 @@ func TestProtobufDecoder(t *testing.T) {
 	metricsBuf.Write([]byte{0x20, 0x5a})
 	// Field 5: rssi = -65
 	metricsBuf.Write([]byte{0x28, 0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01})
+	// Field 6: interval_sec = 10 (0x30, 0x0a)
+	metricsBuf.Write([]byte{0x30, 0x0a})
 
 	// ルートメッセージの組み立て
 	var rootBuf bytes.Buffer
@@ -80,9 +82,13 @@ func TestProtobufDecoder(t *testing.T) {
 	if math.Abs(payload.Metrics.Humidity-60.0) > 0.01 {
 		t.Errorf("Expected Humidity 60.0, got %f", payload.Metrics.Humidity)
 	}
+	if payload.Metrics.IntervalSec != 10 {
+		t.Errorf("Expected IntervalSec 10, got %d", payload.Metrics.IntervalSec)
+	}
 
 	fmt.Printf("Protobuf Decoder Test Passed! Binary Size: %d bytes (vs JSON ~290 bytes)\n", rootBuf.Len())
 }
+
 
 func TestSQLRepository(t *testing.T) {
 	dbPath := "test_iot_platform.db"
@@ -293,3 +299,67 @@ func TestTelemetryWithMTLS(t *testing.T) {
 		t.Fatalf("Expected 200 OK, got %d. Body: %s", resp.StatusCode, string(body))
 	}
 }
+
+func TestDynamicSleepIntervalPersistence(t *testing.T) {
+	repo := storage.NewInMemoryRepository()
+	handler := handlers.NewApiHandler(repo, "")
+
+	// 1. Web UI から CONFIG_UPDATE コマンド (sleep_interval_sec: 10) を発行
+	cmdReq := `{"device_id":"DEV-ESP32-001","action":"CONFIG_UPDATE","params":{"sleep_interval_sec":10}}`
+	req := httptest.NewRequest("POST", "/api/v1/commands", bytes.NewReader([]byte(cmdReq)))
+	w := httptest.NewRecorder()
+	handler.HandleQueueCommand(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("QueueCommand failed: %d", w.Code)
+	}
+
+	// 2. デバイスからのテレメトリ送信 1回目 (コマンド受領時)
+	telemReq1 := `{"header":{"device_id":"DEV-ESP32-001","timestamp":1755420000,"seq_no":1,"firmware_version":"1.0.0"},"metrics":{"temperature":25.0,"battery_voltage":4.0,"battery_level_pct":95}}`
+	reqTelem1 := httptest.NewRequest("POST", "/api/v1/telemetry", bytes.NewReader([]byte(telemReq1)))
+	reqTelem1.Header.Set("Content-Type", "application/json")
+	wTelem1 := httptest.NewRecorder()
+	handler.HandleTelemetry(wTelem1, reqTelem1)
+	if wTelem1.Code != http.StatusOK {
+		t.Fatalf("HandleTelemetry 1 failed: %d", wTelem1.Code)
+	}
+
+	var resp1 models.ApiResponse
+	json.NewDecoder(wTelem1.Body).Decode(&resp1)
+	if resp1.SleepIntervalSec != 10 {
+		t.Errorf("Expected SleepIntervalSec 10 on command delivery, got %d", resp1.SleepIntervalSec)
+	}
+	if len(resp1.Commands) != 1 || resp1.Commands[0].Action != "CONFIG_UPDATE" {
+		t.Fatalf("Expected 1 CONFIG_UPDATE command in response, got %+v", resp1.Commands)
+	}
+
+	// 3. エッジからのコマンド ACK 返却
+	ackReq := fmt.Sprintf(`{"device_id":"DEV-ESP32-001","command_id":"%s","status":"SUCCESS"}`, resp1.Commands[0].CommandID)
+	reqAck := httptest.NewRequest("POST", "/api/v1/commands/ack", bytes.NewReader([]byte(ackReq)))
+	wAck := httptest.NewRecorder()
+	handler.HandleAckCommand(wAck, reqAck)
+	if wAck.Code != http.StatusOK {
+		t.Fatalf("HandleAckCommand failed: %d", wAck.Code)
+	}
+
+	// 4. デバイスからのテレメトリ送信 2回目 (コマンド完了後でも 10秒が永続維持されているか確認)
+	telemReq2 := `{"header":{"device_id":"DEV-ESP32-001","timestamp":1755420010,"seq_no":2,"firmware_version":"1.0.0"},"metrics":{"temperature":25.1,"battery_voltage":3.99,"battery_level_pct":94}}`
+	reqTelem2 := httptest.NewRequest("POST", "/api/v1/telemetry", bytes.NewReader([]byte(telemReq2)))
+	reqTelem2.Header.Set("Content-Type", "application/json")
+	wTelem2 := httptest.NewRecorder()
+	handler.HandleTelemetry(wTelem2, reqTelem2)
+	if wTelem2.Code != http.StatusOK {
+		t.Fatalf("HandleTelemetry 2 failed: %d", wTelem2.Code)
+	}
+
+	var resp2 models.ApiResponse
+	json.NewDecoder(wTelem2.Body).Decode(&resp2)
+	if resp2.SleepIntervalSec != 10 {
+		t.Errorf("Expected SleepIntervalSec 10 to PERSIST after ACK, got %d", resp2.SleepIntervalSec)
+	}
+	if len(resp2.Commands) != 0 {
+		t.Errorf("Expected 0 commands in response after ACK, got %d", len(resp2.Commands))
+	}
+
+	fmt.Println("Dynamic Sleep Interval Persistence Test Passed! (Interval 10s maintained continuously)")
+}
+
