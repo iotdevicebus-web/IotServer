@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Platform システム総合仕様書 (Master Specification)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-cyan: #06b6d4;
+            --code-bg: #0b1120;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* サイドバー目次 */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding: 24px 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar .logo {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sidebar .version {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        #sidebar ul {
+            list-style: none;
+        }
+
+        #sidebar li {
+            margin-bottom: 6px;
+        }
+
+        #sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        #sidebar a:hover {
+            color: var(--text-main);
+            background-color: var(--surface-hover);
+        }
+
+        /* メインコンテンツ */
+        #main-content {
+            flex: 1;
+            padding: 48px 64px;
+            max-width: 1100px;
+            overflow-y: auto;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.4);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-info {
+            display: flex;
+            gap: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 36px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.2em;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-top: 28px;
+            margin-bottom: 14px;
+        }
+
+        p, ul, ol {
+            margin-bottom: 16px;
+            color: #cbd5e1;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* テーブル */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.6);
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: rgba(51, 65, 85, 0.4);
+        }
+
+        /* コードブロック */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: rgba(15, 23, 42, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-size: 0.85em;
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+
+        /* アラート・カード */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .alert-info {
+            background: rgba(37, 99, 235, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        /* Mermaid ダイアグラムコンテナ */
+        .mermaid {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* 印刷・PDF用スタイル */
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            #sidebar {
+                display: none;
+            }
+            #main-content {
+                padding: 0;
+                max-width: 100%;
+            }
+            .card, table, pre, .mermaid {
+                border: 1px solid #ddd;
+                background: white;
+                color: black;
+            }
+            h1, h2, h3 {
+                color: black;
+            }
+            code {
+                color: #333;
+                background: #f4f4f4;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- サイドバー目次 -->
+    <nav id="sidebar">
+        <div class="logo">⚡ IoT Platform</div>
+        <div class="version">SPEC-IOT-2026-001 | v1.0.0</div>
+        <ul>
+            <li><a href="#section-1">1. システム概要と設計思想</a></li>
+            <li><a href="#section-2">2. システム全体アーキテクチャ</a></li>
+            <li><a href="#section-3">3. セキュリティ & 暗号化仕様</a></li>
+            <li><a href="#section-4">4. エッジ・ファームウェア仕様</a></li>
+            <li><a href="#section-5">5. ハードウェア仕様 (ESP32-S3)</a></li>
+            <li><a href="#section-6">6. 通信プロトコル & スキーマ</a></li>
+            <li><a href="#section-7">7. IoT 管理サーバ仕様</a></li>
+            <li><a href="#section-8">8. 双方向 C2 リモート制御</a></li>
+            <li><a href="#section-9">9. 異常検知 & Webhook</a></li>
+            <li><a href="#section-10">10. Web 監視ダッシュボード</a></li>
+            <li><a href="#section-11">11. REST API リファレンス</a></li>
+            <li><a href="#section-12">12. CI/CD & 自動テスト</a></li>
+        </ul>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+        <div class="header-badge">OFFICIAL SYSTEM SPECIFICATION</div>
+        <h1>IoT Platform システム総合仕様書</h1>
+        <div class="meta-info">
+            <span><strong>文書番号:</strong> SPEC-IOT-2026-001</span>
+            <span><strong>バージョン:</strong> 1.0.0 (Approved)</span>
+            <span><strong>更新日:</strong> 2026-08-17</span>
+        </div>
+
+        <!-- 1. システム概要と設計思想 -->
+        <section id="section-1">
+            <h2>1. システム概要と設計思想</h2>
+            <p>本システムは、数万台規模のエッジデバイス（MCU/RTOS）からクラウド管理サーバ、リアルタイム Web ダッシュボードに至るまでを一気通貫で統合した、<strong>高信頼・高セキュリティ・超省電力</strong>な IoT プラットフォームです。</p>
+
+            <div class="card">
+                <h3>3大コア設計原則</h3>
+                <ul>
+                    <li><strong>ゼロトラスト・セキュリティ:</strong> プライベート Root CA による全通信の mTLS（相互TLS）暗号化、証明書の DeviceID 偽装検知、およびハードウェア・セキュアエレメント（HSM）による秘密鍵保護。</li>
+                    <li><strong>HAL / OSAL 抽象化によるポータビリティ:</strong> マイコン（ESP32 / STM32）や RTOS（FreeRTOS 等）の直接依存を排除し、C言語コードを 100% 共通化。</li>
+                    <li><strong>超省電力・通信効率の極大化:</strong> Protocol Buffers v3 によるパケットサイズの <strong>約 81.2% 削減</strong>、<strong>32件オフラインリングバッファ</strong> によるデータ欠損ゼロ化、および <strong>バッテリ寿命 5.8年</strong>（1分間隔送信）。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 2. システム全体アーキテクチャ -->
+        <section id="section-2">
+            <h2>2. システム全体アーキテクチャ</h2>
+            <div class="mermaid">
+graph TB
+    subgraph "Edge Device Layer (MCU)"
+        Sensors["I2C センサ (SHT31 / BME280)"]
+        ADC["バッテリ分圧回路 (ADC1)"]
+        SE["Secure Element (ATECC608A)"]
+        
+        HAL["Hardware Abstraction Layer (HAL)"]
+        OSAL["OS Abstraction Layer (OSAL)"]
+        
+        App["App State Machine (省電力制御)"]
+        Buf["Offline Ring Buffer (32 records)"]
+        Proto["Protobuf Serializer (C99 Zero-Heap)"]
+        
+        Sensors & ADC --> HAL
+        SE <--> HAL
+        HAL & OSAL --> App
+        App <--> Buf
+        App --> Proto
+    end
+
+    subgraph "Transport & Security"
+        mTLS["mTLS 相互認証 (HTTPS Port 8443)"]
+        Proto --> mTLS
+    end
+
+    subgraph "Server & Cloud Layer (Go)"
+        Server["IoT Management Server (Go Engine)"]
+        mTLS --> Server
+        
+        Rule["異常検知ルールエンジン"]
+        C2["双方向 C2 コマンドキュー"]
+        DB[(SQLite 時系列DB - WAL Mode)]
+        OTA["セキュア OTA バイナリ配信"]
+        Web["Web Dashboard (Port 8080)"]
+        Hook["Webhook Dispatcher (Slack/Discord)"]
+        
+        Server --> DB
+        Server --> Rule --> Hook
+        Server <--> C2
+        Server --> OTA
+        DB --> Web
+        Web <--> C2
+    end
+            </div>
+        </section>
+
+        <!-- 3. セキュリティ & 暗号化仕様 -->
+        <section id="section-3">
+            <h2>3. セキュリティ & 暗号化仕様</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>項目</th>
+                        <th>採用仕様</th>
+                        <th>詳細・特徴</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>トランスポート層</strong></td>
+                        <td>TLS 1.3 / TLS 1.2 (mTLS)</td>
+                        <td>クライアント・サーバ双方の X.509 証明書による相互認証</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CA 認証局</strong></td>
+                        <td>プライベート Root CA (2048-bit)</td>
+                        <td>プロジェクト専用の独立したプライベート認証局</td>
+                    </tr>
+                    <tr>
+                        <td><strong>証明書 SAN</strong></td>
+                        <td><code>DNS:iot-server.local</code>, <code>IP:192.168.3.4</code></td>
+                        <td>LAN IP を含めた完全なホスト名・IP 偽装防止</td>
+                    </tr>
+                    <tr>
+                        <td><strong>デバイス認証</strong></td>
+                        <td>X.509 CN / SAN と DeviceID 強制照合</td>
+                        <td>他デバイス名義でのなりすまし送信を即座に <code>403 Forbidden</code> 遮断</td>
+                    </tr>
+                    <tr>
+                        <td><strong>時刻同期 (NTP)</strong></td>
+                        <td>SNTP (<code>pool.ntp.org</code>)</td>
+                        <td>起動時に自動時刻同期を行い、証明書の有効期間を厳格判定</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>ハードウェア・セキュアエレメント (HSM) 連携シーケンス</h3>
+            <div class="mermaid">
+graph LR
+    MCU["マイコン Core (ESP32 / STM32)"] -- "1. I2C: SHA-256 Digest (32B)" --> SE["Secure Element (ATECC608A)"]
+    SE -- "2. ECDSA-P256 署名 (64B)" --> MCU
+    MCU -- "3. TLS CertificateVerify" --> Server["IoT Server"]
+            </div>
+        </section>
+
+        <!-- 4. エッジ・ファームウェア仕様 -->
+        <section id="section-4">
+            <h2>4. エッジ・ファームウェア仕様</h2>
+            <h3>状態遷移ステートマシン</h3>
+            <div class="mermaid">
+stateDiagram-v2
+    [*] --> STATE_INIT: 電源投入 / Wakeup
+    STATE_INIT --> STATE_SENSE: ハードウェア初期化完了
+    STATE_SENSE --> STATE_SERIALIZE: センシング・バッテリ取得完了
+    STATE_SERIALIZE --> STATE_CONNECT: Protobuf (55B) 変換完了
+    
+    STATE_CONNECT --> STATE_TRANSMIT: Wi-Fi 接続 & mTLS 確立
+    STATE_CONNECT --> STATE_BUFFER_OFFLINE: 通信失敗 / 圏外
+    
+    STATE_BUFFER_OFFLINE --> STATE_SLEEP: Flash/RAM バッファ蓄積完了
+    
+    STATE_TRANSMIT --> STATE_HANDLE_RESPONSE: HTTP 200 受信
+    STATE_HANDLE_RESPONSE --> STATE_OTA_UPDATE: OTA更新通知あり
+    STATE_HANDLE_RESPONSE --> STATE_EXEC_COMMAND: C2 リモートコマンドあり
+    STATE_HANDLE_RESPONSE --> STATE_SLEEP: 通常応答
+    
+    STATE_EXEC_COMMAND --> STATE_SLEEP: ACK送信完了
+    STATE_OTA_UPDATE --> STATE_INIT: 新ファームウェア起動 (Reboot)
+    STATE_SLEEP --> STATE_INIT: タイマー満了 / 外部ピン割り込み
+            </div>
+
+            <div class="alert-success">
+                <strong>エッジ側メモリフットプリント (STM32 実測値):</strong> 動的メモリ割り当て（<code>malloc</code>）は <strong>完全ゼロ（0 bytes）</strong>。Flash(ROM) <strong>約 3.6 KB</strong> / RAM <strong>約 3.7 KB</strong> で動作可能。
+            </div>
+        </section>
+
+        <!-- 5. ハードウェア仕様 (ESP32-S3) -->
+        <section id="section-5">
+            <h2>5. ハードウェア仕様 & 実機ピンアサイン (ESP32-S3)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ピン番号</th>
+                        <th>ESP32-S3 内部 GPIO</th>
+                        <th>接続先デバイス / 信号</th>
+                        <th>回路仕様・注意事項</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong><code>3V3</code></strong></td>
+                        <td>3.3V Power Out</td>
+                        <td>センサ / セキュアエレメントの <code>VCC</code></td>
+                        <td>最大 500mA 出力</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>GND</code></strong></td>
+                        <td>Ground</td>
+                        <td>各デバイスの <code>GND</code></td>
+                        <td>共通グランド</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>IO 8</code></strong></td>
+                        <td><strong>GPIO 8</strong></td>
+                        <td>I2C <strong>SDA</strong> (SHT31 / ATECC608A)</td>
+                        <td>4.7kΩ プルアップ抵抗推奨</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>IO 9</code></strong></td>
+                        <td><strong>GPIO 9</strong></td>
+                        <td>I2C <strong>SCL</strong> (SHT31 / ATECC608A)</td>
+                        <td>4.7kΩ プルアップ抵抗推奨</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>IO 1</code></strong></td>
+                        <td><strong>GPIO 1</strong> (ADC1_CH0)</td>
+                        <td>バッテリ電圧監視</td>
+                        <td>1/2 分圧抵抗 (100kΩ + 100kΩ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>IO 4</code></strong></td>
+                        <td><strong>GPIO 4</strong> (RTC_IO)</td>
+                        <td>外部起床スイッチ</td>
+                        <td>内部プルアップ (Active Low) / BOOTボタン代用可</td>
+                    </tr>
+                    <tr>
+                        <td><strong><code>IO 48</code></strong></td>
+                        <td><strong>GPIO 48</strong></td>
+                        <td><strong>オンボード WS2812 RGB LED</strong></td>
+                        <td>稼働中点灯・スリープ時消灯</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 6. 通信プロトコル & スキーマ -->
+        <section id="section-6">
+            <h2>6. 通信プロトコル & スキーマ</h2>
+            <pre><code>syntax = "proto3";
+package iot.platform.v1;
+
+message TelemetryPacket {
+  string device_id = 1;
+  uint64 timestamp = 2;
+  uint32 seq_no = 3;
+  string firmware_version = 4;
+  uint32 boot_count = 5;
+  
+  float temperature = 6;
+  float humidity = 7;
+  float battery_voltage = 8;
+  uint32 battery_level_pct = 9;
+  int32 rssi = 10;
+  
+  string state = 11;
+  uint32 uptime_sec = 12;
+  uint32 free_heap_bytes = 13;
+}</code></pre>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>フォーマット</th>
+                        <th>ペイロード長</th>
+                        <th>削減率</th>
+                        <th>試算バッテリ寿命 (1分間隔)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>JSON 形式</strong></td>
+                        <td>293 Bytes</td>
+                        <td>基準 (0%)</td>
+                        <td>約 2.1 年</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Protocol Buffers v3</strong></td>
+                        <td><strong>55 〜 70 Bytes</strong></td>
+                        <td><strong>約 76.1% 〜 81.2% 削減</strong></td>
+                        <td><strong>約 5.8 年 (約 2.7倍延伸)</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 7. IoT 管理サーバ仕様 -->
+        <section id="section-7">
+            <h2>7. IoT 管理サーバ仕様 (Go / SQLite WAL)</h2>
+            <p><strong>実装言語:</strong> Go 1.22+ (ピュア Go) | <strong>DB:</strong> SQLite (WAL モード, <code>busy_timeout=5000ms</code>)</p>
+            <pre><code>-- 1. デバイスマスタ管理
+CREATE TABLE IF NOT EXISTS devices (
+    device_id VARCHAR(64) PRIMARY KEY,
+    device_type VARCHAR(32),
+    firmware_version VARCHAR(32),
+    status VARCHAR(16) DEFAULT 'OFFLINE',
+    last_seen_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. 時系列テレメトリデータ
+CREATE TABLE IF NOT EXISTS telemetries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id VARCHAR(64),
+    timestamp TIMESTAMP,
+    seq_no INTEGER,
+    temperature REAL,
+    humidity REAL,
+    battery_voltage REAL,
+    battery_level_pct INTEGER,
+    rssi INTEGER,
+    state VARCHAR(32),
+    raw_payload BLOB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);</code></pre>
+        </section>
+
+        <!-- 8. 双方向 C2 リモート制御 -->
+        <section id="section-8">
+            <h2>8. 双方向 C2 リモート制御仕様</h2>
+            <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor User as 管理者 (Web/API)
+    participant Server as IoT Server
+    participant DB as SQLite DB
+    participant Edge as ESP32-S3
+
+    User->>Server: POST /api/v1/commands {"device_id":"DEV-001", "action":"REBOOT"}
+    Server->>DB: INSERT commands (status='PENDING')
+    Server-->>User: 201 Created (command_id: "cmd-123")
+
+    Note over Edge,Server: エッジがスリープから起床
+    Edge->>Server: POST /api/v1/telemetry (Protobuf)
+    Server->>DB: SELECT * FROM commands WHERE device_id='DEV-001' AND status='PENDING'
+    Server-->>Edge: 200 OK {"status":"OK", "commands":[{"command_id":"cmd-123", "action":"REBOOT"}]}
+    
+    Note over Edge: エッジがコマンドを実行
+    Edge->>Server: POST /api/v1/commands/ack {"command_id":"cmd-123", "status":"SUCCESS"}
+    Server->>DB: UPDATE commands SET status='ACKED'
+    Server-->>Edge: 200 OK (ACK Received)
+            </div>
+        </section>
+
+        <!-- 9. 異常検知 & Webhook -->
+        <section id="section-9">
+            <h2>9. 異常検知ルールエンジン & Webhook</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ルール名</th>
+                        <th>評価条件</th>
+                        <th>重要度</th>
+                        <th>アクション</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>HIGH_TEMPERATURE</code></td>
+                        <td><code>Temperature > 35.0 ℃</code></td>
+                        <td><span style="color: #ef4444; font-weight: bold;">CRITICAL</span></td>
+                        <td>🚨 高温異常検知 ➔ Webhook 即時送信</td>
+                    </tr>
+                    <tr>
+                        <td><code>LOW_TEMPERATURE</code></td>
+                        <td><code>Temperature < 0.0 ℃</code></td>
+                        <td><span style="color: #f59e0b; font-weight: bold;">WARNING</span></td>
+                        <td>⚠️ 凍結注意 ➔ Webhook 送信</td>
+                    </tr>
+                    <tr>
+                        <td><code>LOW_BATTERY</code></td>
+                        <td><code>BatteryLevelPct < 20 %</code></td>
+                        <td><span style="color: #ef4444; font-weight: bold;">CRITICAL</span></td>
+                        <td>🚨 バッテリ低下 ➔ 交換アラート送信</td>
+                    </tr>
+                    <tr>
+                        <td><code>WEAK_SIGNAL</code></td>
+                        <td><code>RSSI < -85 dBm</code></td>
+                        <td><span style="color: #f59e0b; font-weight: bold;">WARNING</span></td>
+                        <td>⚠️ 通信障害予兆 ➔ 警告送信</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 10. Web 監視ダッシュボード -->
+        <section id="section-10">
+            <h2>10. Web 監視ダッシュボード</h2>
+            <div class="card">
+                <p><strong>アクセス URL:</strong> <a href="http://localhost:8080/" target="_blank" style="color: var(--accent-cyan);"><code>http://localhost:8080/</code></a></p>
+                <ul>
+                    <li><strong>リアルタイム時系列グラフ:</strong> Chart.js による温湿度・バッテリ電圧推移。</li>
+                    <li><strong>デバイス一覧 & 状態表示:</strong> ONLINE/OFFLINE、最新パケット受信時刻、電波強度。</li>
+                    <li><strong>リモートコマンド操作パネル:</strong> デバイスを選択して <code>CONFIG_UPDATE</code>, <code>REBOOT</code>, <code>SELF_TEST</code> を即時配信。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 11. REST API リファレンス -->
+        <section id="section-11">
+            <h2>11. REST API エンドポイントリファレンス</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>メソッド</th>
+                        <th>パス</th>
+                        <th>ポート / 認証</th>
+                        <th>概要</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>POST</code></td>
+                        <td><code>/api/v1/telemetry</code></td>
+                        <td><code>:8443</code> (mTLS)</td>
+                        <td>テレメトリ受信 & コマンドピギーバック配信</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST</code></td>
+                        <td><code>/api/v1/commands/ack</code></td>
+                        <td><code>:8443</code> (mTLS)</td>
+                        <td>コマンド実行完了 ACK 受信</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET</code></td>
+                        <td><code>/api/v1/ota/download/{ver}</code></td>
+                        <td><code>:8443</code> (mTLS)</td>
+                        <td>暗号化 OTA バイナリ配信</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET</code></td>
+                        <td><code>/api/v1/devices</code></td>
+                        <td><code>:8080</code> (HTTP)</td>
+                        <td>全デバイス一覧・最新ステータス取得</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET</code></td>
+                        <td><code>/api/v1/telemetry/history</code></td>
+                        <td><code>:8080</code> (HTTP)</td>
+                        <td>時系列テレメトリ履歴データ取得</td>
+                    </tr>
+                    <tr>
+                        <td><code>POST</code></td>
+                        <td><code>/api/v1/commands</code></td>
+                        <td><code>:8080</code> (HTTP)</td>
+                        <td>C2 リモートコマンドの新規キュー登録</td>
+                    </tr>
+                    <tr>
+                        <td><code>GET</code></td>
+                        <td><code>/healthz</code></td>
+                        <td><code>:8080</code> (HTTP)</td>
+                        <td>サーバ生存ヘルスチェック (<code>{"status":"HEALTHY"}</code>)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 12. CI/CD & 自動テスト -->
+        <section id="section-12">
+            <h2>12. CI/CD パイプライン & 自動テスト構成</h2>
+            <div class="card">
+                <h3>ローカル一括テストスイート (<code>test_all.bat</code> / <code>test_all.sh</code>)</h3>
+                <pre><code>[1/4] mTLS 証明書一括自動生成 (PowerShell / Bash)
+[2/4] エッジ FW 単体テスト (MSVC / GCC) -> Protobuf 81%削減 & セキュアエレメント検証
+[3/4] Go サーバ & SQLite WAL & 異常検知ルールエンジン単体テスト
+[4/4] E2E 自動結合テスト (複数エッジ並行シミュレータ + OTA + DB + Web UI + C2)</code></pre>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Mermaid.js の初期化 (ダークモード対応)
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                darkMode: true,
+                background: '#1e293b',
+                primaryColor: '#2563eb',
+                primaryTextColor: '#ffffff',
+                lineColor: '#60a5fa'
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+*.db
+*.log
+bin/
+test_iot_platform.db
+tests/
+.git

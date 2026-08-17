@@ -1,0 +1,27 @@
+# Binaries and build artifacts
+.pio/
+build/
+bin/
+*.exe
+*.o
+*.obj
+*.a
+*.lib
+*.elf
+*.bin
+
+# Database and runtime logs
+*.db
+*.db-wal
+*.db-shm
+*.log
+edge/platform/esp32/logs/
+
+# Secrets and private keys (※ローカルテスト用を除く)
+# tools/certs/out/*.key
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

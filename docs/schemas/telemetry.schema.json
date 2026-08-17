@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TelemetryPayload",
+  "description": "エッジデバイスから定期送信されるテレメトリデータのスキーマ",
+  "type": "object",
+  "required": [
+    "header",
+    "metrics"
+  ],
+  "properties": {
+    "header": {
+      "type": "object",
+      "description": "メッセージ共通ヘッダ",
+      "required": [
+        "device_id",
+        "timestamp",
+        "seq_no",
+        "firmware_version"
+      ],
+      "properties": {
+        "device_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{8,64}$",
+          "description": "デバイス一意識別子 (例: DEV-ESP32-A1B2C3D4)"
+        },
+        "timestamp": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "データ取得時のUNIXエポック秒 (UTC)"
+        },
+        "seq_no": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "description": "メッセージ通番 (パケット欠落検知用、32bit整数)"
+        },
+        "firmware_version": {
+          "type": "string",
+          "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9]+)?$",
+          "description": "ファームウェアバージョン (例: 1.0.0, v1.2.3-rc1)"
+        },
+        "boot_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "起動・リブート回数カウンタ"
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "センシング測定データ",
+      "properties": {
+        "temperature": {
+          "type": "number",
+          "minimum": -50.0,
+          "maximum": 120.0,
+          "description": "温度 (℃)"
+        },
+        "humidity": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 100.0,
+          "description": "湿度 (%)"
+        },
+        "battery_voltage": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 6.0,
+          "description": "バッテリ電圧 (V)"
+        },
+        "battery_level_pct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "バッテリ残量 (%)"
+        },
+        "rssi": {
+          "type": "integer",
+          "minimum": -120,
+          "maximum": 0,
+          "description": "電波強度 (dBm)"
+        },
+        "custom_values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "number",
+              "string",
+              "boolean"
+            ]
+          },
+          "description": "拡張用汎用メトリクスキー・バリュー"
+        }
+      }
+    },
+    "status": {
+      "type": "object",
+      "description": "デバイス状態情報",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "NORMAL",
+            "LOW_POWER",
+            "WARNING",
+            "ERROR"
+          ],
+          "default": "NORMAL"
+        },
+        "uptime_sec": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "連続稼働時間 (秒)"
+        },
+        "free_heap_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "空きヒープメモリ (バイト)"
+        }
+      }
+    }
+  }
+}

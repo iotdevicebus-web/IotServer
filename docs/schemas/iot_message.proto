@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package iot.protocol;
+
+option go_package = "server/core/telemetry/proto;telemetrypb";
+
+// 共通メッセージヘッダ
+message MessageHeader {
+  string device_id = 1;
+  int64 timestamp = 2;
+  uint32 seq_no = 3;
+  string firmware_version = 4;
+  uint32 boot_count = 5;
+}
+
+// テレメトリ測定値
+message MetricsData {
+  float temperature = 1;
+  float humidity = 2;
+  float battery_voltage = 3;
+  uint32 battery_level_pct = 4;
+  int32 rssi = 5;
+  map<string, float> custom_metrics = 6;
+}
+
+// デバイスステータス
+message DeviceStatus {
+  enum State {
+    NORMAL = 0;
+    LOW_POWER = 1;
+    WARNING = 2;
+    ERROR = 3;
+  }
+  State state = 1;
+  uint32 uptime_sec = 2;
+  uint32 free_heap_bytes = 3;
+}
+
+// テレメトリ送信ペイロード
+message TelemetryRequest {
+  MessageHeader header = 1;
+  MetricsData metrics = 2;
+  DeviceStatus status = 3;
+}
+
+// イベント・アラート送信ペイロード
+message EventRequest {
+  MessageHeader header = 1;
+  
+  enum EventType {
+    UNKNOWN = 0;
+    THRESHOLD_EXCEEDED = 1;
+    BATTERY_LOW = 2;
+    HARDWARE_FAULT = 3;
+    REBOOT = 4;
+    TAMPER_DETECTED = 5;
+    NETWORK_RESTORED = 6;
+  }
+  
+  enum Severity {
+    INFO = 0;
+    WARNING = 1;
+    CRITICAL = 2;
+    FATAL = 3;
+  }
+  
+  EventType event_type = 2;
+  Severity severity = 3;
+  string message = 4;
+  map<string, string> details = 5;
+}
+
+// サーバ共通レスポンス
+message ServerResponse {
+  enum Status {
+    OK = 0;
+    ERROR = 1;
+    INVALID_PAYLOAD = 2;
+    UNAUTHORIZED = 3;
+  }
+  
+  Status status = 1;
+  string message = 2;
+  int64 server_time = 3;
+  uint32 sleep_interval_sec = 4;
+  
+  message OtaInfo {
+    bool available = 1;
+    string target_version = 2;
+    string package_url = 3;
+    string sha256 = 4;
+    uint32 size_bytes = 5;
+    bool mandatory = 6;
+  }
+  OtaInfo ota = 5;
+  
+  message DeviceCommand {
+    string command_id = 1;
+    string action = 2;
+    map<string, string> params = 3;
+  }
+  repeated DeviceCommand commands = 6;
+}

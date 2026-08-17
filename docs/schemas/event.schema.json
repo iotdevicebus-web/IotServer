@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EventPayload",
+  "description": "エッジデバイスから異常検知・状態変化時に送信されるイベントペイロード",
+  "type": "object",
+  "required": [
+    "header",
+    "event"
+  ],
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": [
+        "device_id",
+        "timestamp",
+        "seq_no",
+        "firmware_version"
+      ],
+      "properties": {
+        "device_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{8,64}$"
+        },
+        "timestamp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seq_no": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "firmware_version": {
+          "type": "string"
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "event_type",
+        "severity",
+        "message"
+      ],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "enum": [
+            "THRESHOLD_EXCEEDED",
+            "BATTERY_LOW",
+            "HARDWARE_FAULT",
+            "REBOOT",
+            "TAMPER_DETECTED",
+            "NETWORK_RESTORED"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "INFO",
+            "WARNING",
+            "CRITICAL",
+            "FATAL"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "details": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+[ req ]
+default_bits        = 2048
+prompt              = no
+default_md          = sha256
+distinguished_name  = req_distinguished_name
+req_extensions      = v3_req
+
+[ req_distinguished_name ]
+C  = JP
+ST = Tokyo
+L  = Chiyoda
+O  = IoT Platform Project
+OU = Devices
+CN = DEV-ESP32-001
+
+[ v3_req ]
+basicConstraints     = CA:FALSE
+keyUsage             = critical, digitalSignature, keyEncipherment
+extendedKeyUsage     = clientAuth
+subjectAltName       = @alt_names
+
+[ alt_names ]
+DNS.1 = DEV-ESP32-001
+URI.1 = urn:iot:device:DEV-ESP32-001

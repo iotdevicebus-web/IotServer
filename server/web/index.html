@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Platform - Device Monitoring & C2 Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-purple: #a855f7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 24px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .title-area h1 {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border: 1px solid var(--accent-green);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .summary-card .label {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .summary-card .value {
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .device-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .device-table th, .device-table td {
+            text-align: left;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 14px;
+        }
+
+        .device-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .device-table tr {
+            cursor: pointer;
+            transition: background-color 0.15s;
+        }
+
+        .device-table tr:hover, .device-table tr.selected {
+            background-color: rgba(6, 182, 212, 0.1);
+        }
+
+        .badge-online {
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.15);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+
+        .btn-cyan { background: var(--accent-cyan); color: #000; }
+        .btn-amber { background: var(--accent-amber); color: #000; }
+        .btn-red { background: var(--accent-red); color: #fff; }
+        .btn-purple { background: var(--accent-purple); color: #fff; }
+
+        .cmd-panel {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+        }
+
+        .cmd-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-green);
+            color: var(--accent-green);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title-area">
+            <h1>🌐 IoT Management & Command Console</h1>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Zero-Trust mTLS, Time-Series Monitor & Bidirectional C2</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <span class="status-badge" id="live-indicator">● System Online</span>
+            <button class="btn btn-cyan" onclick="fetchData()">🔄 手動更新</button>
+        </div>
+    </div>
+
+    <div class="summary-grid">
+        <div class="summary-card">
+            <div class="label">接続デバイス総数</div>
+            <div class="value" id="total-devices" style="color: var(--accent-cyan);">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">オンライン稼働中</div>
+            <div class="value" id="online-devices" style="color: var(--accent-green);">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">累計受信テレメトリ</div>
+            <div class="value" id="total-packets" style="color: var(--accent-amber);">0</div>
+        </div>
+        <div class="summary-card">
+            <div class="label">OTA配信ステータス</div>
+            <div class="value" style="color: var(--accent-purple); font-size: 20px;">v1.1.0 (Active)</div>
+        </div>
+    </div>
+
+    <div class="main-layout">
+        <!-- 左列: デバイス一覧 & コマンドパネル -->
+        <div>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📱 登録デバイス一覧</div>
+                </div>
+                <table class="device-table">
+                    <thead>
+                        <tr>
+                            <th>Device ID</th>
+                            <th>FW</th>
+                            <th>Status</th>
+                            <th>Packets</th>
+                        </tr>
+                    </thead>
+                    <tbody id="device-table-body">
+                        <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">データ取得中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 双方向リモートコマンド送信パネル -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🎮 リモートコマンド制御</div>
+                </div>
+                <div class="cmd-panel">
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                        対象デバイス: <strong id="cmd-target-device" style="color: var(--text-primary);">選択してください</strong>
+                    </div>
+                    <div class="cmd-actions">
+                        <button class="btn btn-cyan" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 10})">⏱ スリープ10秒に変更</button>
+                        <button class="btn btn-amber" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 60})">⏱ スリープ60秒に変更</button>
+                        <button class="btn btn-purple" onclick="sendRemoteCommand('SELF_TEST', {})">🔍 セルフテスト実行</button>
+                        <button class="btn btn-red" onclick="sendRemoteCommand('REBOOT', {})">⚡ 即時再起動</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右列: 時系列チャート -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title" id="chart-device-title">📊 テレメトリ推移 (選択デバイス)</div>
+                <span id="selected-device-meta" style="color: var(--text-secondary); font-size: 13px;"></span>
+            </div>
+
+            <div class="header-status">
+                <a href="/spec" target="_blank" style="background: rgba(37, 99, 235, 0.2); border: 1px solid #3b82f6; color: #93c5fd; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 600; margin-right: 12px;">📖 総合仕様書 (HTML)</a>
+                <span class="pulse-dot"></span>
+                <span>Server ONLINE</span>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+            </div>
+
+            <div class="chart-container" style="height: 200px;">
+                <canvas id="batteryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let selectedDevice = null;
+        let tempChartInstance = null;
+        let batteryChartInstance = null;
+
+        async function initDashboard() {
+            initCharts();
+            await fetchData();
+            setInterval(fetchData, 5000);
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3500);
+        }
+
+        function initCharts() {
+            const ctxTemp = document.getElementById('tempChart').getContext('2d');
+            tempChartInstance = new Chart(ctxTemp, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: '温度 (℃)',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            fill: true,
+                            data: [],
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '湿度 (%)',
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'transparent',
+                            data: [],
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { position: 'left', min: 0, max: 50, grid: { color: '#334155' }, ticks: { color: '#ef4444' } },
+                        y1: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, ticks: { color: '#06b6d4' } }
+                    },
+                    plugins: { legend: { labels: { color: '#f8fafc' } } }
+                }
+            });
+
+            const ctxBatt = document.getElementById('batteryChart').getContext('2d');
+            batteryChartInstance = new Chart(ctxBatt, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'バッテリ電圧 (V)',
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            data: [],
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
+                        y: { min: 3.0, max: 4.5, grid: { color: '#334155' }, ticks: { color: '#10b981' } }
+                    },
+                    plugins: { legend: { labels: { color: '#f8fafc' } } }
+                }
+            });
+        }
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/v1/devices');
+                const devices = await res.json();
+                renderDeviceList(devices);
+
+                if (devices.length > 0) {
+                    if (!selectedDevice || !devices.some(d => d.device_id === selectedDevice)) {
+                        selectedDevice = devices[0].device_id;
+                    }
+                    document.getElementById('cmd-target-device').innerText = selectedDevice;
+                    await fetchTelemetryHistory(selectedDevice);
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+            }
+        }
+
+        function renderDeviceList(devices) {
+            const tbody = document.getElementById('device-table-body');
+            tbody.innerHTML = '';
+
+            let totalPackets = 0;
+            devices.forEach(d => totalPackets += d.total_telemetries);
+
+            document.getElementById('total-devices').innerText = devices.length;
+            document.getElementById('online-devices').innerText = devices.filter(d => d.status === 'ONLINE').length;
+            document.getElementById('total-packets').innerText = totalPackets;
+
+            devices.forEach(d => {
+                const tr = document.createElement('tr');
+                if (d.device_id === selectedDevice) tr.classList.add('selected');
+                tr.onclick = () => {
+                    selectedDevice = d.device_id;
+                    document.getElementById('cmd-target-device').innerText = selectedDevice;
+                    renderDeviceList(devices);
+                    fetchTelemetryHistory(d.device_id);
+                };
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600;">${d.device_id}</td>
+                    <td><span style="background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${d.firmware_version}</span></td>
+                    <td><span class="badge-online">${d.status}</span></td>
+                    <td>${d.total_telemetries}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function fetchTelemetryHistory(deviceId) {
+            document.getElementById('chart-device-title').innerText = `📊 テレメトリ推移 (${deviceId})`;
+            try {
+                const res = await fetch(`/api/v1/telemetry/history?device_id=${deviceId}&limit=20`);
+                const history = await res.json();
+                
+                history.reverse();
+                const labels = history.map(h => new Date(h.header.timestamp * 1000).toLocaleTimeString());
+                const temps = history.map(h => h.metrics.temperature);
+                const humis = history.map(h => h.metrics.humidity);
+                const batts = history.map(h => h.metrics.battery_voltage);
+
+                tempChartInstance.data.labels = labels;
+                tempChartInstance.data.datasets[0].data = temps;
+                tempChartInstance.data.datasets[1].data = humis;
+                tempChartInstance.update();
+
+                batteryChartInstance.data.labels = labels;
+                batteryChartInstance.data.datasets[0].data = batts;
+                batteryChartInstance.update();
+
+                if (history.length > 0) {
+                    const latest = history[history.length - 1];
+                    document.getElementById('selected-device-meta').innerText = 
+                        `最新: ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm)`;
+                }
+            } catch (err) {
+                console.error("History fetch error:", err);
+            }
+        }
+
+        async function sendRemoteCommand(action, params) {
+            if (!selectedDevice) {
+                alert("対象デバイスを選択してください。");
+                return;
+            }
+            try {
+                const res = await fetch('/api/v1/commands', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_id: selectedDevice,
+                        action: action,
+                        params: params
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✅ コマンド [${action}] をキューに登録しました (ID: ${data.command_id})`);
+                } else {
+                    alert(`コマンド送信エラー: ${data.message}`);
+                }
+            } catch (err) {
+                alert(`送信失敗: ${err}`);
+            }
+        }
+
+        window.onload = initDashboard;
+    </script>
+</body>
+</html>

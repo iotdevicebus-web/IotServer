@@ -1,0 +1,143 @@
+name: IoT Platform CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ========================================================
+  # 1. Edge Firmware Unit & Mock Tests (Native GCC)
+  # ========================================================
+  edge-unit-tests:
+    name: Edge Firmware Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y gcc cmake make
+
+      - name: Compile and Run Edge Unit Tests
+        run: |
+          gcc -Wall -Wextra -Werror -std=c99 \
+            -Iedge/app/include \
+            -Iedge/osal/include \
+            -Iedge/hal/include \
+            -Iedge/middleware/serializer \
+            -Iedge/middleware/telemetry \
+            edge/tests/unit/test_edge_mock.c \
+            edge/app/src/app_state_machine.c \
+            edge/middleware/serializer/telemetry_serializer.c \
+            edge/middleware/serializer/protobuf_serializer.c \
+            edge/middleware/telemetry/telemetry_buffer.c \
+            edge/osal/mock/osal_mock.c \
+            edge/hal/mock/hal_mock.c \
+            -lpthread -o test_edge_mock
+          ./test_edge_mock
+
+  # ========================================================
+  # 2. STM32 ARM GCC Cross-Compilation
+  # ========================================================
+  stm32-cross-build:
+    name: STM32 ARM GCC Cross-Compilation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ARM Toolchain & Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi ninja-build cmake
+
+      - name: Build STM32 Static Library
+        run: |
+          mkdir -p edge/platform/stm32/build
+          cd edge/platform/stm32/build
+          cmake .. \
+            -DCMAKE_SYSTEM_NAME=Generic \
+            -DCMAKE_C_COMPILER=arm-none-eabi-gcc \
+            -DCMAKE_C_FLAGS="-mcpu=cortex-m4 -mthumb -Wall -Werror -O2" \
+            -G Ninja
+          ninja
+
+  # ========================================================
+  # 3. Server Unit & Storage Tests
+  # ========================================================
+  server-tests:
+    name: Go Server & Storage Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Generate Test mTLS Certificates
+        run: |
+          chmod +x tools/certs/generate_certs.sh
+          cd tools/certs
+          ./generate_certs.sh "DEV-ESP32-001" 365
+          ./generate_certs.sh "DEV-STM32-002" 365
+
+      - name: Run Go Unit & mTLS Tests
+        run: |
+          cd server
+          go test -v -race ./tests
+
+  # ========================================================
+  # 4. E2E Integration, OTA & DB Telemetry Tests
+  # ========================================================
+  e2e-integration-tests:
+    name: Full E2E & OTA & Web Integration Tests
+    runs-on: ubuntu-latest
+    needs: [edge-unit-tests, server-tests]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Generate mTLS Certificates
+        run: |
+          chmod +x tools/certs/generate_certs.sh
+          cd tools/certs
+          ./generate_certs.sh "DEV-ESP32-001" 365
+          ./generate_certs.sh "DEV-STM32-002" 365
+
+      - name: Execute Full E2E Test Suite
+        run: |
+          cd tools/test_runner
+          go run run_e2e.go
+
+  # ========================================================
+  # 5. Docker Multi-stage Build Test
+  # ========================================================
+  docker-build-test:
+    name: Docker Image Build Test
+    runs-on: ubuntu-latest
+    needs: [e2e-integration-tests]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        run: |
+          docker build -t iot-platform-server:latest ./server
