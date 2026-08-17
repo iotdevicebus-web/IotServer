@@ -122,12 +122,13 @@ void setup() {
     init_psram_buffer();
     init_fast_clock();
 
-    // 3. mTLS 相互TLS設定 (PKCS#1 クライアント証明書をサーバに提示しつつ、ESP32のIP照合バグを回避)
-    Serial.println("[SECURITY] Configuring X.509 mTLS (Client Cert + PKCS#1 Key)...");
-    s_secure_client.setInsecure();                             // ESP32 IP SAN 照合バグ(-9984)を回避
+    // 3. mTLS 相互TLS証明書の設定 (Root CA + クライアント証明書 + PKCS#1 秘密鍵)
+    Serial.println("[SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + PKCS#1 Key)...");
+    s_secure_client.setCACert(IOT_ROOT_CA_CERT);               // サーバ検証用 Root CA
     s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);     // デバイス固有証明書 (DEV-ESP32-001)
     s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);      // デバイス秘密鍵 (PKCS#1 RSA)
     Serial.println("[SECURITY] mTLS Credentials fully loaded for " IOT_DEVICE_ID);
+
 
 
     // 4. Wi-Fi 接続試行
