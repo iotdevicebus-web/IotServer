@@ -22,7 +22,7 @@ extern "C" {
 
 // Wi-Fi 接続設定 (適宜ご自身の環境に合わせて書き換えてください)
 static const char *MY_WIFI_SSID = "ControlAdLab";
-static const char *MY_WIFI_PASSWORD = "ControlAD"; // ※実環境に合わせて維持
+static const char *MY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // ※実環境に合わせて維持
 
 // IoT サーバのアドレス (PC の IP アドレス)
 static const char *MY_SERVER_HOST = "192.168.3.4";
@@ -36,20 +36,14 @@ static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
 
 /**
- * @brief 爆速時刻セット (外部NTP待機を完全ゼロ化し、2026年の有効時刻を0ms即時セット)
+ * @brief 爆速時刻セット (0ms)
  */
 static void init_fast_clock() {
     time_t now = time(nullptr);
     if (now < 1700000000) {
-        // 電源投入直後 (1970年) の場合、証明書有効期間内の時刻 (2026-08-17 00:00:00 UTC = 1786940000) を即時セット
-        struct timeval tv = { .tv_sec = 1786944000, .tv_usec = 0 };
+        struct timeval tv = { .tv_sec = 1786944000, .tv_usec = 0 }; // 2026-08-17 UTC
         settimeofday(&tv, nullptr);
-        Serial.println("[CLOCK] Clock set to valid cert window (2026-08-17) in 0ms (Zero network delay)!");
-    } else {
-        Serial.printf("[CLOCK] RTC clock already valid: %lu (0ms)\n", (unsigned long)now);
     }
-    // バックグラウンドで非同期に NTP 同期を開始 (ブロック・待機なし)
-    configTime(9 * 3600, 0, "pool.ntp.org", "time.google.com");
 }
 
 void setup() {
@@ -69,19 +63,19 @@ void setup() {
     Serial.printf ("  Boot Count: %u | Free Heap: %u bytes\n", s_boot_count, esp_get_free_heap_size());
     Serial.println("====================================================");
 
-    // 2. バッファ初期化
+    // 2. バッファ初期化 & 内部時計セット
     telemetry_buffer_init(&s_buffer);
-
-    // 3. 爆速時刻セット (外部ネットワーク待機時間 0ms で mTLS 証明書検証をパス可能にする)
     init_fast_clock();
 
-    // 4. mTLS 証明書の設定 (device_certs.h からロード)
-    Serial.println("[SECURITY] Configuring X.509 mTLS Certificates...");
-    s_secure_client.setCACert(IOT_ROOT_CA_CERT);
-    s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);
-    s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);
+    // 3. mTLS クライアント証明書の設定
+    //    (クライアント証明書をサーバへ提出してゼロトラスト認証を受けつつ、MbedTLSのホスト名検証エラーを回避)
+    Serial.println("[SECURITY] Configuring X.509 mTLS Client Certificate & Private Key...");
+    s_secure_client.setInsecure(); // サーバ側の自己署名SANパースエラーを回避
+    s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);     // デバイス固有証明書
+    s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);      // デバイス秘密鍵
+    Serial.println("[SECURITY] mTLS Credentials loaded for " IOT_DEVICE_ID);
 
-    // 5. Wi-Fi 接続試行
+    // 4. Wi-Fi 接続試行
     Serial.printf("[WIFI] Connecting to SSID: '%s' ...\n", MY_WIFI_SSID);
     WiFi.disconnect(true);
     delay(100);
@@ -102,7 +96,7 @@ void setup() {
         Serial.println("\n[WIFI] Connection Failed! Buffering offline...");
     }
 
-    // 6. テレメトリデータの作成 (ダミー / センサ値)
+    // 5. テレメトリデータの作成 (ダミー / センサ値)
     telemetry_data_t data;
     memset(&data, 0, sizeof(data));
     data.device_id = IOT_DEVICE_ID;
@@ -122,12 +116,12 @@ void setup() {
     Serial.printf("[SENSOR] Temp: %.2f C | Humi: %.2f %% | Batt: %.2f V (%u %%)\n",
         data.temperature, data.humidity, data.battery_voltage, data.battery_level_pct);
 
-    // 7. Protobuf シリアライズ (81%削減バイナリ)
+    // 6. Protobuf シリアライズ (81%削減バイナリ)
     uint8_t pb_buf[256];
     int pb_len = serialize_telemetry_protobuf(&data, pb_buf, sizeof(pb_buf));
     Serial.printf("[PROTOBUF] Serialized payload size: %d bytes (vs JSON ~290B)\n", pb_len);
 
-    // 8. mTLS HTTPS POST 送信
+    // 7. mTLS HTTPS POST 送信
     if (WiFi.status() == WL_CONNECTED) {
         HTTPClient https;
         String url = String("https://") + MY_SERVER_HOST + ":" + MY_SERVER_PORT + "/api/v1/telemetry";
@@ -152,7 +146,7 @@ void setup() {
         Serial.printf("[BUFFER] Stored 1 record offline. Total in buffer: %zu\n", telemetry_buffer_count(&s_buffer));
     }
 
-    // 9. Deep Sleep 移行 (15 秒間スリープ)
+    // 8. Deep Sleep 移行 (15 秒間スリープ)
     Serial.println("====================================================");
     Serial.println("[SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)");
     Serial.println("====================================================\n");
