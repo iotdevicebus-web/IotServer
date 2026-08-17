@@ -22,7 +22,7 @@ extern "C" {
 
 // Wi-Fi 接続設定 (適宜ご自身の環境に合わせて書き換えてください)
 static const char *MY_WIFI_SSID = "ControlAdLab";
-static const char *MY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // ※実環境に合わせて維持
+static const char *MY_WIFI_PASSWORD = "ControlAD"; // ※実環境に合わせて維持
 
 // IoT サーバのアドレス (PC の IP アドレス)
 static const char *MY_SERVER_HOST = "192.168.3.4";

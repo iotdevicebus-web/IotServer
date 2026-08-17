@@ -11,7 +11,8 @@ ST = Tokyo
 L  = Chiyoda
 O  = IoT Platform Project
 OU = Server Operations
-CN = localhost
+CN = 192.168.3.4
+
 
 [ v3_req ]
 basicConstraints     = CA:FALSE
