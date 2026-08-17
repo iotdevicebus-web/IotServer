@@ -592,8 +592,8 @@ sequenceDiagram
 
         <!-- 8. タイムアウト & オフライン再送制御 -->
         <section id="sec-8">
-            <h2>8. タイムアウト & オフライン再送制御 (リングバッファ)</h2>
-            <p>山間部や地下など、一時的な電波断（圏外）が発生してもデータが欠損しないよう、エッジ内部に <strong>32件の静的リングバッファ</strong> を保持します。</p>
+            <h2>8. タイムアウト & オフライン再送制御 (8MB PSRAM / SRAM バッファ)</h2>
+            <p>山間部や地下など、一時的な電波断（圏外）が発生してもデータが欠損しないよう、<strong>8MB Octal PSRAM 上に最大 10,000件（約 1.5MB）、内部 SRAM 上に 32〜64件のリングバッファ</strong> を保持します。</p>
 
             <table>
                 <thead>
@@ -606,27 +606,28 @@ sequenceDiagram
                 <tbody>
                     <tr>
                         <td><strong>Wi-Fi 接続試行</strong></td>
-                        <td>最大 <code>10 秒</code> (20回試行)</td>
-                        <td>接続不能時は Wi-Fi を即時 OFF ➔ データをバッファに Push ➔ スリープ</td>
+                        <td>最大 <code>15 秒</code> (30回試行)</td>
+                        <td>接続不能時は Wi-Fi を即時 OFF ➔ データを 8MB PSRAM バッファに Push ➔ スリープ</td>
                     </tr>
                     <tr>
                         <td><strong>TLS ハンドシェイク</strong></td>
                         <td>最大 <code>3 秒</code></td>
-                        <td>エラー時は接続をクローズ ➔ データをバッファに Push ➔ スリープ</td>
+                        <td>エラー時は接続をクローズ ➔ データを 8MB PSRAM バッファに Push ➔ スリープ</td>
                     </tr>
                     <tr>
                         <td><strong>HTTP POST 応答待ち</strong></td>
                         <td>最大 <code>3 秒</code></td>
-                        <td>200 OK 未達時はデータをバッファに Push ➔ スリープ</td>
+                        <td>200 OK 未達時はデータを 8MB PSRAM バッファに Push ➔ スリープ</td>
                     </tr>
                     <tr>
                         <td><strong>次回通信成功時</strong></td>
                         <td>-</td>
-                        <td>最新データ送信後、バッファに蓄積された過去データを古い順に自動フラッシュ送信</td>
+                        <td>最新データ送信後、8MB PSRAM に蓄積された過去データ (最大10,000件) を古い順に自動フラッシュ送信</td>
                     </tr>
                 </tbody>
             </table>
         </section>
+
 
         <!-- 9. エラーコード & 復旧マトリクス -->
         <section id="sec-9">

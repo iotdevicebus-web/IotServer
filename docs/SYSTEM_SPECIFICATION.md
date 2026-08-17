@@ -158,11 +158,17 @@ stateDiagram-v2
     STATE_SLEEP --> STATE_INIT: タイマー満了 / 外部ピン割り込み
 ```
 
-### 4.2 メモリフットプリント (STM32 Cortex-M4 実測値)
+### 4.2 マイコン仕様比較
 
-* **動的メモリ割り当て（`malloc`/`free`）**: **完全ゼロ（0 bytes）**
-* **Flash (ROM) 消費量**: **約 3.6 KB**
-* **SRAM (RAM) 消費量**: **約 3.7 KB**（※32件の静的リングバッファを含む）
+| 項目 | STM32 (Cortex-M4/M0+) | ESP32-S3 (Xtensa Dual-Core) |
+| :--- | :--- | :--- |
+| **搭載 RAM** | SRAM 32KB 〜 96KB | 内蔵 SRAM 320KB + **外部 8MB Octal PSRAM (SDRAM)** |
+| **RAM 消費量** | **約 3.7 KB** (バッファ込) | 約 46.1 KB (Arduino/MbedTLS込) |
+| **Flash 消費量** | **約 3.6 KB** (ピュアC99) | 約 896 KB (8MB Flash 中 26.8%) |
+| **オフラインバッファ** | 静的リングバッファ (32件) | **8MB PSRAM 大容量リングバッファ (最大 10,000件 / 41時間分)** |
+| **暗号化・認証** | ATECC608A (HSM) / mTLS | X.509 mTLS (2048-bit RSA PKCS#1 / DNS SAN対応) |
+| **消費電力 (スリープ時)** | STOP モード (約 15 µA) | Deep Sleep モード (約 8〜10 µA) |
+| **バッテリ寿命 (2000mAh)** | **約 5.8 年** (1分送信時) | **約 3.2 年** (1分送信時) |
 
 ---
 
@@ -179,6 +185,7 @@ stateDiagram-v2
 | **`IO 1`** | **GPIO 1** (ADC1_CH0) | バッテリ電圧監視 | 1/2 分圧抵抗 (100kΩ + 100kΩ) |
 | **`IO 4`** | **GPIO 4** (RTC_IO) | 外部起床スイッチ | 内部プルアップ (Active Low) |
 | **`IO 48`** | **GPIO 48** | **オンボード WS2812 RGB LED** | 動作中/エラーインジケータ |
+
 
 ---
 

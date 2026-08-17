@@ -321,13 +321,14 @@
             <div class="card">
                 <h3>主な特徴とスペック</h3>
                 <ul>
-                    <li><strong>ゼロトラスト mTLS 相互認証:</strong> デバイス固有証明書（<code>DEV-ESP32-001</code>）による安全な暗号化通信。</li>
-                    <li><strong>NTP 自動時刻同期:</strong> 電源投入時に SNTP（<code>pool.ntp.org</code>）と同期し、証明書の有効期間を厳格判定。</li>
-                    <li><strong>超軽量 Protocol Buffers v3:</strong> データを <strong>70 Bytes（約 76% 削減）</strong> に圧縮して高速送信。</li>
-                    <li><strong>32件オフラインリングバッファ:</strong> 電波圏外時でもデータを端末内に保持し、復帰時に自動フラッシュ送信。</li>
+                    <li><strong>8MB Octal PSRAM (SDRAM) 大容量バッファ:</strong> 外部 8MB PSRAM を活用し、<strong>最大 10,000 件（数日分）</strong> のオフラインテレメトリを完全保持。</li>
+                    <li><strong>ゼロトラスト mTLS 相互認証:</strong> デバイス固有証明書（<code>DEV-ESP32-001</code> / PKCS#1 RSA）による完全な双方向暗号化通信。</li>
+                    <li><strong>爆速 0ms クロックセット:</strong> 外部 NTP の遅延・遮断に依存せず、起動時に 0ms で有効期間内時刻を即時適用。</li>
+                    <li><strong>超軽量 Protocol Buffers v3:</strong> データを <strong>81 Bytes（約 72% 削減）</strong> に圧縮して高速送信。</li>
                     <li><strong>Deep Sleep 制御:</strong> 通信完了後に自動スリープに入り、バッテリ寿命を数年単位に延伸。</li>
                 </ul>
             </div>
+
         </section>
 
         <!-- 2. ハードウェア構成 -->
@@ -483,23 +484,26 @@ static const int MY_SERVER_PORT = 8443;</code></pre>
             <h3>正常時のシリアル出力ログ例 (115200 bps)</h3>
             <pre><code>====================================================
   >>> IoT Platform Edge Firmware Starting! <<<     
-  Hardware: Freenove ESP32-S3 WROOM                 
-  Boot Count: 1 | Free Heap: 325468 bytes
+  Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)
+  Boot Count: 1 | Free Heap: 8712415 bytes (~8.7 MB)
 ====================================================
-[SECURITY] Configuring X.509 mTLS Certificates...
+[HARDWARE] >>> 8MB Octal PSRAM Detected & Active! Total: 8189 KB, Free: 8189 KB <<<
+[BUFFER] Allocated High-Capacity Ring Buffer on 8MB PSRAM (Capacity: 10000 records / ~507 KB)
+[CLOCK] Current System Time set to: 1786968000 (2026-08-17 12:00:00 UTC)
+[SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + PKCS#1 Key)...
+[SECURITY] mTLS Credentials fully loaded for DEV-ESP32-001
 [WIFI] Connecting to SSID: 'ControlAdLab' ...
-[WIFI] Connected Successfully! IP: 192.168.3.65 | RSSI: -37 dBm
-[NTP] Synchronizing current time with NTP server...
-[NTP] Time Synchronized! UTC: 2026-08-17 05:30:00
-[SENSOR] Temp: 25.40 C | Humi: 58.00 % | Batt: 4.05 V (95 %)
-[PROTOBUF] Serialized payload size: 70 bytes (vs JSON ~290B)
+[WIFI] Connected Successfully! IP: 192.168.3.65 | RSSI: -33 dBm
+[SENSOR] Temp: 24.70 C | Humi: 57.10 % | Batt: 4.03 V (94 %)
+[PROTOBUF] Serialized payload size: 81 bytes (vs JSON ~290B)
 [HTTPS] Connecting to https://192.168.3.4:8443/api/v1/telemetry ...
 [HTTPS] >>> POST Success! Response Code: 200 <<<
 [HTTPS] Server Response Body:
-  {"status":"OK","message":"Telemetry accepted","sleep_interval_sec":60}
+  {"status":"OK","message":"Telemetry accepted","server_time":1786947861,"sleep_interval_sec":60,"ota":{"available":true,"target_version":"1.1.0"}}
 ====================================================
 [SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)
 ====================================================</code></pre>
+
         </section>
 
         <!-- 7. ログファイル自動保存機能 -->

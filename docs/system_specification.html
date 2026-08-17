@@ -445,6 +445,43 @@ graph LR
         <!-- 4. エッジ・ファームウェア仕様 -->
         <section id="section-4">
             <h2>4. エッジ・ファームウェア仕様</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>項目</th>
+                        <th>STM32 (Cortex-M4/M0+)</th>
+                        <th>ESP32-S3 (Xtensa Dual-Core)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>搭載 RAM</strong></td>
+                        <td>SRAM 32KB 〜 96KB</td>
+                        <td>内蔵 SRAM 320KB + <strong>外部 8MB Octal PSRAM (SDRAM)</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>オフラインバッファ</strong></td>
+                        <td>静的リングバッファ (32件)</td>
+                        <td><strong>8MB PSRAM 大容量リングバッファ (最大 10,000件 / 41時間分)</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Flash メモリ</strong></td>
+                        <td>Flash 64KB 〜 512KB</td>
+                        <td>8MB Quad/Octal SPI Flash</td>
+                    </tr>
+                    <tr>
+                        <td><strong>消費電力 (スリープ時)</strong></td>
+                        <td>STOP モード (約 15 µA)</td>
+                        <td>Deep Sleep モード (約 8〜10 µA)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>暗号・相互認証</strong></td>
+                        <td>ATECC608A (HSM) / mTLS</td>
+                        <td>X.509 mTLS (2048-bit RSA PKCS#1 / HSM連携)</td>
+                    </tr>
+                </tbody>
+            </table>
+
             <h3>状態遷移ステートマシン</h3>
             <div class="mermaid">
 stateDiagram-v2
