@@ -296,9 +296,11 @@ void setup() {
     data.state = "NORMAL";
     data.uptime_sec = (uint32_t)(millis() / 1000);
     data.free_heap_bytes = esp_get_free_heap_size();
+    data.interval_sec = s_sleep_interval_sec;
 
-    Serial.printf("[SENSOR] Temp: %.2f C | Humi: %.2f %% | Batt: %.2f V (%u %%)\n",
-        data.temperature, data.humidity, data.battery_voltage, data.battery_level_pct);
+    Serial.printf("[SENSOR] Temp: %.2f C | Humi: %.2f %% | Batt: %.2f V (%u %%) | Interval: %u s\n",
+        data.temperature, data.humidity, data.battery_voltage, data.battery_level_pct, data.interval_sec);
+
 
     // 6. Protobuf シリアライズ & mTLS HTTPS 送信
     send_telemetry_payload(&data, connected);

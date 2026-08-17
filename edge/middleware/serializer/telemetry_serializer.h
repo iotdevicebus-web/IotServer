@@ -27,6 +27,8 @@ typedef struct {
     float battery_voltage;
     uint32_t battery_level_pct;
     int32_t rssi;
+    uint32_t interval_sec;
+
     
     // Status
     const char *state;

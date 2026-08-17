@@ -58,6 +58,7 @@ func (r *SQLRepository) migrate() error {
 		last_voltage REAL,
 		last_battery_pct INTEGER,
 		last_rssi INTEGER,
+		current_interval_sec INTEGER DEFAULT 60,
 		created_at DATETIME NOT NULL
 	);
 
@@ -110,10 +111,15 @@ func (r *SQLRepository) migrate() error {
 	CREATE INDEX IF NOT EXISTS idx_commands_device_status ON commands(device_id, status);
 	`
 
+	if _, err := r.db.Exec(schema); err != nil {
+		return err
+	}
 
-	_, err := r.db.Exec(schema)
-	return err
+	// 既存データベースへの安全なカラム追加
+	r.db.Exec("ALTER TABLE devices ADD COLUMN current_interval_sec INTEGER DEFAULT 60;")
+	return nil
 }
+
 
 func (r *SQLRepository) SaveTelemetry(t *models.TelemetryPayload) error {
 	tx, err := r.db.Begin()
@@ -150,120 +156,138 @@ func (r *SQLRepository) SaveTelemetry(t *models.TelemetryPayload) error {
 		return fmt.Errorf("insert telemetry failed: %w", err)
 	}
 
-	// 2. devices テーブルの UPSERT (状態更新)
-	_, err = tx.Exec(`
-		INSERT INTO devices (
-			device_id, firmware_version, status, last_seq_no, last_seen_at, total_telemetries,
-			last_temp, last_humidity, last_voltage, last_battery_pct, last_rssi, created_at
-		) VALUES (?, ?, 'ONLINE', ?, ?, 1, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT(device_id) DO UPDATE SET
-			firmware_version = excluded.firmware_version,
-			status = 'ONLINE',
-			last_seq_no = excluded.last_seq_no,
-			last_seen_at = excluded.last_seen_at,
-			total_telemetries = devices.total_telemetries + 1,
-			last_temp = excluded.last_temp,
-			last_humidity = excluded.last_humidity,
-			last_voltage = excluded.last_voltage,
-			last_battery_pct = excluded.last_battery_pct,
-			last_rssi = excluded.last_rssi
-	`,
-		t.Header.DeviceID, t.Header.FirmwareVersion, t.Header.SeqNo, now,
-		t.Metrics.Temperature, t.Metrics.Humidity, t.Metrics.BatteryVoltage, t.Metrics.BatteryLevelPct, t.Metrics.RSSI, now,
-	)
-	if err != nil {
-		return fmt.Errorf("upsert device failed: %w", err)
-	}
-
-	return tx.Commit()
-}
-
-func (r *SQLRepository) SaveEvent(e *models.EventPayload) error {
-	detailsJSON, _ := json.Marshal(e.Event.Details)
-	now := time.Now().UTC()
-
-	_, err := r.db.Exec(`
-		INSERT INTO events (device_id, timestamp, event_type, severity, message, details_json, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`,
-		e.Header.DeviceID, e.Header.Timestamp, e.Event.EventType, e.Event.Severity, e.Event.Message, string(detailsJSON), now,
-	)
-	return err
-}
-
-func (r *SQLRepository) GetDevice(deviceID string) (*models.DeviceState, error) {
-	row := r.db.QueryRow(`
-		SELECT device_id, firmware_version, status, last_seq_no, last_seen_at, total_telemetries,
-		       last_temp, last_humidity, last_voltage, last_battery_pct, last_rssi
-		FROM devices WHERE device_id = ?
-	`, deviceID)
-
-	var d models.DeviceState
-	var lastTemp, lastHumi, lastVolt sql.NullFloat64
-	var lastBattPct, lastRSSI sql.NullInt64
-
-	err := row.Scan(
-		&d.DeviceID, &d.FirmwareVersion, &d.Status, &d.LastSeqNo, &d.LastSeenAt, &d.TotalTelemetries,
-		&lastTemp, &lastHumi, &lastVolt, &lastBattPct, &lastRSSI,
-	)
-	if err == sql.ErrNoRows {
-		return nil, ErrDeviceNotFound
-	} else if err != nil {
-		return nil, err
-	}
-
-	d.LastMetrics = models.MetricsData{
-		Temperature:     lastTemp.Float64,
-		Humidity:        lastHumi.Float64,
-		BatteryVoltage:  lastVolt.Float64,
-		BatteryLevelPct: uint32(lastBattPct.Int64),
-		RSSI:            int32(lastRSSI.Int64),
-	}
-
-	return &d, nil
-}
-
-func (r *SQLRepository) ListDevices() []*models.DeviceState {
-	rows, err := r.db.Query(`
-		SELECT d.device_id, d.firmware_version, d.status, d.last_seq_no, d.last_seen_at, d.total_telemetries,
-		       d.last_temp, d.last_humidity, d.last_voltage, d.last_battery_pct, d.last_rssi,
-		       (SELECT COUNT(*) FROM commands c WHERE c.device_id = d.device_id AND c.status = 'PENDING') AS pending_count
-		FROM devices d ORDER BY d.last_seen_at DESC
-	`)
-	if err != nil {
-		log.Printf("[ERROR] ListDevices query failed: %v", err)
-		return []*models.DeviceState{}
-	}
-	defer rows.Close()
-
-	var list []*models.DeviceState
-	for rows.Next() {
-		var d models.DeviceState
-		var lastTemp, lastHumi, lastVolt sql.NullFloat64
-		var lastBattPct, lastRSSI sql.NullInt64
-		var pendingCount int
-
-		if err := rows.Scan(
-			&d.DeviceID, &d.FirmwareVersion, &d.Status, &d.LastSeqNo, &d.LastSeenAt, &d.TotalTelemetries,
-			&lastTemp, &lastHumi, &lastVolt, &lastBattPct, &lastRSSI,
-			&pendingCount,
-		); err != nil {
-			continue
+		// 2. devices テーブルの UPSERT (状態更新)
+		intervalSec := t.Metrics.IntervalSec
+		if intervalSec == 0 {
+			intervalSec = 60
 		}
 
-		d.PendingCommandsCount = pendingCount
+		_, err = tx.Exec(`
+			INSERT INTO devices (
+				device_id, firmware_version, status, last_seq_no, last_seen_at, total_telemetries,
+				last_temp, last_humidity, last_voltage, last_battery_pct, last_rssi, current_interval_sec, created_at
+			) VALUES (?, ?, 'ONLINE', ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(device_id) DO UPDATE SET
+				firmware_version = excluded.firmware_version,
+				status = 'ONLINE',
+				last_seq_no = excluded.last_seq_no,
+				last_seen_at = excluded.last_seen_at,
+				total_telemetries = devices.total_telemetries + 1,
+				last_temp = excluded.last_temp,
+				last_humidity = excluded.last_humidity,
+				last_voltage = excluded.last_voltage,
+				last_battery_pct = excluded.last_battery_pct,
+				last_rssi = excluded.last_rssi,
+				current_interval_sec = CASE WHEN excluded.current_interval_sec > 0 THEN excluded.current_interval_sec ELSE devices.current_interval_sec END
+		`,
+			t.Header.DeviceID, t.Header.FirmwareVersion, t.Header.SeqNo, now,
+			t.Metrics.Temperature, t.Metrics.Humidity, t.Metrics.BatteryVoltage, t.Metrics.BatteryLevelPct, t.Metrics.RSSI, intervalSec, now,
+		)
+		if err != nil {
+			return fmt.Errorf("upsert device failed: %w", err)
+		}
+
+		return tx.Commit()
+	}
+
+	func (r *SQLRepository) SaveEvent(e *models.EventPayload) error {
+		detailsJSON, _ := json.Marshal(e.Event.Details)
+		now := time.Now().UTC()
+
+		_, err := r.db.Exec(`
+			INSERT INTO events (device_id, timestamp, event_type, severity, message, details_json, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?)
+		`,
+			e.Header.DeviceID, e.Header.Timestamp, e.Event.EventType, e.Event.Severity, e.Event.Message, string(detailsJSON), now,
+		)
+		return err
+	}
+
+	func (r *SQLRepository) GetDevice(deviceID string) (*models.DeviceState, error) {
+		row := r.db.QueryRow(`
+			SELECT device_id, firmware_version, status, last_seq_no, last_seen_at, total_telemetries,
+			       last_temp, last_humidity, last_voltage, last_battery_pct, last_rssi, COALESCE(current_interval_sec, 60)
+			FROM devices WHERE device_id = ?
+		`, deviceID)
+
+		var d models.DeviceState
+		var lastTemp, lastHumi, lastVolt sql.NullFloat64
+		var lastBattPct, lastRSSI, currentInterval sql.NullInt64
+
+		err := row.Scan(
+			&d.DeviceID, &d.FirmwareVersion, &d.Status, &d.LastSeqNo, &d.LastSeenAt, &d.TotalTelemetries,
+			&lastTemp, &lastHumi, &lastVolt, &lastBattPct, &lastRSSI, &currentInterval,
+		)
+		if err == sql.ErrNoRows {
+			return nil, ErrDeviceNotFound
+		} else if err != nil {
+			return nil, err
+		}
+
+		d.CurrentIntervalSec = uint32(currentInterval.Int64)
+		if d.CurrentIntervalSec == 0 {
+			d.CurrentIntervalSec = 60
+		}
 		d.LastMetrics = models.MetricsData{
 			Temperature:     lastTemp.Float64,
 			Humidity:        lastHumi.Float64,
 			BatteryVoltage:  lastVolt.Float64,
 			BatteryLevelPct: uint32(lastBattPct.Int64),
 			RSSI:            int32(lastRSSI.Int64),
+			IntervalSec:     d.CurrentIntervalSec,
 		}
 
-		list = append(list, &d)
+		return &d, nil
 	}
-	return list
-}
+
+	func (r *SQLRepository) ListDevices() []*models.DeviceState {
+		rows, err := r.db.Query(`
+			SELECT d.device_id, d.firmware_version, d.status, d.last_seq_no, d.last_seen_at, d.total_telemetries,
+			       d.last_temp, d.last_humidity, d.last_voltage, d.last_battery_pct, d.last_rssi,
+			       COALESCE(d.current_interval_sec, 60) AS current_interval,
+			       (SELECT COUNT(*) FROM commands c WHERE c.device_id = d.device_id AND c.status = 'PENDING') AS pending_count
+			FROM devices d ORDER BY d.last_seen_at DESC
+		`)
+		if err != nil {
+			log.Printf("[ERROR] ListDevices query failed: %v", err)
+			return []*models.DeviceState{}
+		}
+		defer rows.Close()
+
+		var list []*models.DeviceState
+		for rows.Next() {
+			var d models.DeviceState
+			var lastTemp, lastHumi, lastVolt sql.NullFloat64
+			var lastBattPct, lastRSSI, currentInterval sql.NullInt64
+			var pendingCount int
+
+			if err := rows.Scan(
+				&d.DeviceID, &d.FirmwareVersion, &d.Status, &d.LastSeqNo, &d.LastSeenAt, &d.TotalTelemetries,
+				&lastTemp, &lastHumi, &lastVolt, &lastBattPct, &lastRSSI, &currentInterval,
+				&pendingCount,
+			); err != nil {
+				continue
+			}
+
+			d.PendingCommandsCount = pendingCount
+			d.CurrentIntervalSec = uint32(currentInterval.Int64)
+			if d.CurrentIntervalSec == 0 {
+				d.CurrentIntervalSec = 60
+			}
+			d.LastMetrics = models.MetricsData{
+				Temperature:     lastTemp.Float64,
+				Humidity:        lastHumi.Float64,
+				BatteryVoltage:  lastVolt.Float64,
+				BatteryLevelPct: uint32(lastBattPct.Int64),
+				RSSI:            int32(lastRSSI.Int64),
+				IntervalSec:     d.CurrentIntervalSec,
+			}
+
+			list = append(list, &d)
+		}
+		return list
+	}
+
 
 
 func (r *SQLRepository) GetTelemetryHistory(deviceID string, limit int) ([]models.TelemetryPayload, error) {

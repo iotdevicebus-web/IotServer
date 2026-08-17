@@ -170,6 +170,13 @@ func parseMetrics(data []byte, m *models.MetricsData) error {
 				return err
 			}
 			m.RSSI = int32(v)
+		case 6: // interval_sec (varint/uint32)
+			v, err := binary.ReadUvarint(r)
+			if err != nil {
+				return err
+			}
+			m.IntervalSec = uint32(v)
+
 		default:
 			if err := skipField(r, wire); err != nil {
 				return err

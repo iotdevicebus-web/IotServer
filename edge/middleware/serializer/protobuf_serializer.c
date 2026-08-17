@@ -84,6 +84,8 @@ int serialize_telemetry_protobuf(
     // Zigzag/Varint for int32 RSSI
     uint64_t rssi_encoded = (uint64_t)(int64_t)data->rssi;
     m_len += encode_varint_field(5, rssi_encoded, metrics_buf + m_len);
+    m_len += encode_varint_field(6, (uint64_t)data->interval_sec, metrics_buf + m_len);
+
 
     // 3. DeviceStatus (Sub-message)
     uint8_t status_buf[32];

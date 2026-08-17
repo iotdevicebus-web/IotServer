@@ -18,6 +18,7 @@ type MetricsData struct {
 	BatteryVoltage   float64                `json:"battery_voltage,omitempty"`
 	BatteryLevelPct  uint32                 `json:"battery_level_pct,omitempty"`
 	RSSI             int32                  `json:"rssi,omitempty"`
+	IntervalSec      uint32                 `json:"interval_sec,omitempty"`
 	CustomValues     map[string]interface{} `json:"custom_values,omitempty"`
 }
 
@@ -87,5 +88,7 @@ type DeviceState struct {
 	Status               string    `json:"status"`
 	TotalTelemetries     uint64   `json:"total_telemetries"`
 	PendingCommandsCount int      `json:"pending_commands_count"`
+	CurrentIntervalSec   uint32   `json:"current_interval_sec"`
 }
+
 

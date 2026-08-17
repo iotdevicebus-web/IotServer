@@ -246,12 +246,13 @@
                         <tr>
                             <th>Device ID</th>
                             <th>FW</th>
+                            <th>起動間隔</th>
                             <th>Status</th>
                             <th>Packets</th>
                         </tr>
                     </thead>
                     <tbody id="device-table-body">
-                        <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">データ取得中...</td></tr>
+                        <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">データ取得中...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -262,9 +263,11 @@
                     <div class="card-title">🎮 リモートコマンド制御</div>
                 </div>
                 <div class="cmd-panel">
-                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
-                        対象デバイス: <strong id="cmd-target-device" style="color: var(--text-primary);">選択してください</strong>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>対象: <strong id="cmd-target-device" style="color: var(--text-primary);">選択してください</strong></div>
+                        <div>現在の起動間隔: <strong id="cmd-current-interval" style="color: var(--accent-cyan);">-- 秒</strong></div>
                     </div>
+
 
                     <!-- コマンド待機中インジケータ -->
                     <div id="cmd-pending-box" style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
@@ -464,16 +467,21 @@
                 const pendingBadge = d.pending_commands_count > 0 ? 
                     `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px;">⏳ 送信待ち (${d.pending_commands_count})</span>` : '';
 
+                const intervalText = d.current_interval_sec ? `${d.current_interval_sec}秒` : '60秒';
+
                 tr.innerHTML = `
                     <td style="font-weight: 600;">${d.device_id}${pendingBadge}</td>
                     <td><span style="background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${d.firmware_version}</span></td>
+                    <td><span style="color: var(--accent-cyan); font-weight: 600;">⏱ ${intervalText}</span></td>
                     <td><span class="badge-online">${d.status}</span></td>
                     <td>${d.total_telemetries}</td>
                 `;
                 tbody.appendChild(tr);
 
-                // 選択中のデバイスのコマンド待機状態の更新
+                // 選択中のデバイスのコマンド待機状態 & 起動間隔の更新
                 if (d.device_id === selectedDevice) {
+                    document.getElementById('cmd-current-interval').innerText = `${intervalText}`;
+
                     const pendingBox = document.getElementById('cmd-pending-box');
                     const successBox = document.getElementById('cmd-success-box');
                     
@@ -530,13 +538,15 @@
 
                 if (history.length > 0) {
                     const latest = history[history.length - 1];
+                    const interval = latest.metrics.interval_sec || 60;
                     document.getElementById('selected-device-meta').innerText = 
-                        `最新: ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm)`;
+                        `最新: ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm | 起動間隔: ${interval}秒)`;
                 }
             } catch (err) {
                 console.error("History fetch error:", err);
             }
         }
+
 
         async function sendRemoteCommand(action, params) {
             if (!selectedDevice) {
