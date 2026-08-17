@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エッジ・クラウド間 プロトコル通信仕様書 (詳細版) - IoT Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.25);
+            --bg: #090d16;
+            --surface: #111827;
+            --surface-hover: #1f2937;
+            --border: #1f2937;
+            --border-highlight: #374151;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+            --accent-green: #10b981;
+            --accent-cyan: #06b6d4;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --code-bg: #030712;
+            --sidebar-width: 290px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* サイドバー目次 */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding: 24px 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar .brand {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sidebar .doc-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #sidebar ul {
+            list-style: none;
+        }
+
+        #sidebar li {
+            margin-bottom: 4px;
+        }
+
+        #sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            display: block;
+            padding: 7px 12px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        #sidebar a:hover {
+            color: #ffffff;
+            background-color: var(--surface-hover);
+        }
+
+        /* メインコンテンツ */
+        #main-content {
+            flex: 1;
+            padding: 48px 64px;
+            max-width: 1140px;
+            overflow-y: auto;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            background: var(--primary-glow);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-bar {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 36px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.2em;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e5e7eb;
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        p, ul, ol {
+            margin-bottom: 16px;
+            color: #d1d5db;
+            font-size: 0.95rem;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* テーブル */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        th {
+            background-color: rgba(3, 7, 18, 0.6);
+            color: #9ca3af;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: rgba(31, 41, 55, 0.5);
+        }
+
+        /* コードブロック */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-highlight);
+            border-radius: 8px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: rgba(3, 7, 18, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-size: 0.85em;
+            border: 1px solid rgba(31, 41, 55, 0.8);
+        }
+
+        /* パケットビットマップ図 */
+        .byte-map {
+            display: flex;
+            border: 1px solid var(--border-highlight);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .byte-cell {
+            padding: 10px 6px;
+            border-right: 1px solid var(--border-highlight);
+            background: var(--surface);
+        }
+        .byte-cell:last-child { border-right: none; }
+        .byte-tag { font-size: 0.7rem; color: var(--accent-cyan); display: block; }
+
+        /* Mermaid コンテナ */
+        .mermaid {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* アラートボックス */
+        .info-card {
+            background: rgba(6, 182, 212, 0.08);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            #sidebar { display: none; }
+            #main-content { padding: 0; max-width: 100%; }
+            table, pre, .mermaid, .byte-map { border: 1px solid #ccc; background: white; color: black; }
+            h1, h2, h3 { color: black; }
+            code { color: #111; background: #eee; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- サイドバー目次 -->
+    <nav id="sidebar">
+        <div class="brand">⚡ IoT Platform</div>
+        <div class="doc-title">Protocol Specification</div>
+        <ul>
+            <li><a href="#sec-1">1. プロトコルスタック概要</a></li>
+            <li><a href="#sec-2">2. mTLS セキュア接続ハンドシェイク</a></li>
+            <li><a href="#sec-3">3. Protocol Buffers ワイヤーフォーマット</a></li>
+            <li><a href="#sec-4">4. テレメトリ送信プロトコル (POST)</a></li>
+            <li><a href="#sec-5">5. 双方向 C2 ピギーバック制御</a></li>
+            <li><a href="#sec-6">6. コマンド実行結果 ACK プロトコル</a></li>
+            <li><a href="#sec-7">7. 暗号化 OTA 更新プロトコル</a></li>
+            <li><a href="#sec-8">8. タイムアウト & オフライン再送制御</a></li>
+            <li><a href="#sec-9">9. エラーコード & 復旧マトリクス</a></li>
+        </ul>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+        <div class="badge-tag">OFFICIAL PROTOCOL SPECIFICATION</div>
+        <h1>エッジ・クラウド間 通信プロトコル仕様書 (詳細版)</h1>
+        <div class="meta-bar">
+            <span><strong>仕様書番号:</strong> PROTO-SPEC-2026-V1</span>
+            <span><strong>バージョン:</strong> 1.0.0 (Final)</span>
+            <span><strong>適用対象:</strong> ESP32-S3, STM32, IoT Server</span>
+            <span><strong>更新日:</strong> 2026-08-17</span>
+        </div>
+
+        <!-- 1. プロトコルスタック概要 -->
+        <section id="sec-1">
+            <h2>1. プロトコルスタック概要</h2>
+            <p>本プラットフォームにおけるエッジマイコンとインターネット管理サーバ間の通信レイヤ構成です。標準的な TCP/IP スタック上に <strong>TLS 1.3 相互認証 (mTLS)</strong> を適用し、アプリケーション層では <strong>Protocol Buffers v3</strong> を採用して極限までオーバーヘッドを削減しています。</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>階層 (OSI / TCP-IP)</th>
+                        <th>採用プロトコル / 技術</th>
+                        <th>用途・詳細仕様</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>L7: アプリケーション層</strong></td>
+                        <td><strong>Protocol Buffers v3</strong> / JSON</td>
+                        <td>バイナリシリアライズ (Wire Type: 0, 2, 5). ペイロード圧縮率 約81%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L7: アプリケーション転送</strong></td>
+                        <td><strong>HTTP/1.1 (Keep-Alive 対応)</strong></td>
+                        <td>RESTful API エンドポイント (POST / GET)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L5-L6: 暗号・認証層</strong></td>
+                        <td><strong>TLS 1.3 / 1.2 (mTLS 相互認証)</strong></td>
+                        <td>X.509 デバイス固有証明書, ECDSA-P256 / RSA-2048, HSM 連携</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L4: トランスポート層</strong></td>
+                        <td><strong>TCP</strong> (Port: <code>8443</code>)</td>
+                        <td>高信頼ストリーム転送</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L3: ネットワーク層</strong></td>
+                        <td><strong>IPv4 / IPv6</strong></td>
+                        <td>IP ルーティング (SAN: <code>192.168.3.4</code> 等)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L1-L2: データリンク・物理層</strong></td>
+                        <td><strong>Wi-Fi (802.11 b/g/n) / LTE-M / Ethernet</strong></td>
+                        <td>無線通信モデム (Wi-Fi Station / Cellular Cat-M1)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 2. mTLS セキュア接続ハンドシェイク -->
+        <section id="sec-2">
+            <h2>2. mTLS セキュア接続ハンドシェイク</h2>
+            <p>本システムは「ゼロトラスト」モデルに基づき、サーバだけでなく<strong>エッジマイコン側も固有のクライアント証明書を提示して相互に身元を証明</strong>します。</p>
+
+            <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Edge as Edge Device (ESP32-S3)
+    participant SE as Secure Element (HSM)
+    participant Server as IoT Server (:8443)
+
+    Edge->>Server: 1. ClientHello (TLS 1.3, Supported Ciphers)
+    Server-->>Edge: 2. ServerHello, Server Certificate, CertificateRequest
+    
+    Note over Edge: サーバ証明書を Root CA で検証
+    Edge->>SE: 3. I2C: CertificateVerify 用 Hash (SHA-256) 署名要求
+    SE-->>Edge: 4. ECDSA-P256 署名データ (64 Bytes)
+    Note over SE: 秘密鍵はチップ外に一切出ない
+
+    Edge->>Server: 5. Client Certificate, CertificateVerify (HSM署名), Finished
+    
+    Note over Server: クライアント証明書の CN/SAN と DeviceID を照合
+    Server-->>Edge: 6. Handshake Finished (mTLS 確立完了)
+            </div>
+
+            <div class="info-card">
+                <strong>セキュリティ検査ルール (サーバ側):</strong><br>
+                サーバはハンドシェイク完了後、クライアント証明書の <code>Subject CommonName (CN)</code> または <code>SAN (Subject Alternative Name)</code> を抽出し、送信ペイロード内の <code>device_id</code> と完全一致するか検証します。不一致の場合は直ちに <code>403 Forbidden</code> で切断します。
+            </div>
+        </section>
+
+        <!-- 3. Protocol Buffers ワイヤーフォーマット -->
+        <section id="sec-3">
+            <h2>3. Protocol Buffers ワイヤーフォーマット (バイナリ構造)</h2>
+            <p>エッジ側では外部ライブラリ（nanopb等）に依存せず、ピュア C99 で <code>Wire Type</code> を直接エンコードします。動的メモリ確保（<code>malloc</code>）は一切行いません。</p>
+
+            <h3>3.1 Wire Type 定義</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Wire Type</th>
+                        <th>種別</th>
+                        <th>適用フィールド</th>
+                        <th>データ構造</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>0</code></td>
+                        <td><strong>Varint</strong></td>
+                        <td><code>timestamp</code>, <code>seq_no</code>, <code>boot_count</code>, <code>uptime</code></td>
+                        <td>7ビットごとに分割、最上位ビット(MSB)で継続フラグ</td>
+                    </tr>
+                    <tr>
+                        <td><code>2</code></td>
+                        <td><strong>Length-delimited</strong></td>
+                        <td><code>device_id</code>, <code>firmware_version</code>, <code>state</code></td>
+                        <td>長さ (Varint) + UTF-8 バイト列</td>
+                    </tr>
+                    <tr>
+                        <td><code>5</code></td>
+                        <td><strong>32-bit (Fixed32)</strong></td>
+                        <td><code>temperature</code>, <code>humidity</code>, <code>battery_voltage</code></td>
+                        <td>IEEE 754 float32 (リトルエンディアン 4バイト)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>3.2 フィールドタグ (Field Tag) のバイナリ構造</h3>
+            <p>各フィールドの先頭 1バイトは <code>Tag = (Field_Number << 3) | Wire_Type</code> で表されます：</p>
+
+            <div class="byte-map">
+                <div class="byte-cell" style="flex: 2;"><span class="byte-tag">Field 1 (0x0A)</span><code>device_id</code> (LEN)</div>
+                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 2 (0x10)</span><code>timestamp</code> (VARINT)</div>
+                <div class="byte-cell" style="flex: 1;"><span class="byte-tag">Field 3 (0x18)</span><code>seq_no</code> (VARINT)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 6 (0x35)</span><code>temperature</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 7 (0x3D)</span><code>humidity</code> (FIXED32)</div>
+                <div class="byte-cell" style="flex: 1.5;"><span class="byte-tag">Field 8 (0x45)</span><code>batt_volt</code> (FIXED32)</div>
+            </div>
+        </section>
+
+        <!-- 4. テレメトリ送信プロトコル -->
+        <section id="sec-4">
+            <h2>4. テレメトリ送信プロトコル (POST /api/v1/telemetry)</h2>
+            <p>エッジデバイスがスリープから目覚めた際に、測定データをサーバへ送信する主トランザクションです。</p>
+
+            <h3>4.1 HTTP リクエスト仕様</h3>
+            <pre><code>POST /api/v1/telemetry HTTP/1.1
+Host: 192.168.3.4:8443
+User-Agent: IoT-Edge/1.0.0 (ESP32-S3)
+Content-Type: application/x-protobuf
+Content-Length: 70
+Connection: close
+
+[... 70 Bytes of Protocol Buffers Binary Payload ...]</code></pre>
+
+            <h3>4.2 HTTP レスポンス仕様 (通常時 200 OK)</h3>
+            <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 72
+Date: Mon, 17 Aug 2026 14:00:00 GMT
+
+{
+  "status": "OK",
+  "message": "Telemetry accepted",
+  "sleep_interval_sec": 60
+}</code></pre>
+        </section>
+
+        <!-- 5. 双方向 C2 ピギーバック制御 -->
+        <section id="sec-5">
+            <h2>5. 双方向 C2 ピギーバック制御仕様</h2>
+            <p>スリープ駆動マイコンは常時着信（待受）が不可能なため、<strong>「エッジからのテレメトリ POST に対する HTTP レスポンスにリモートコマンドを相乗り（ピギーバック）させて配信」</strong> します。</p>
+
+            <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor Admin as 管理者
+    participant Server as IoT Server
+    participant Edge as ESP32-S3
+
+    Admin->>Server: 1. POST /api/v1/commands (例: CONFIG_UPDATE, sleep=10s)
+    Note over Server: commands テーブルに status='PENDING' で保存
+
+    Note over Edge: スリープ満了・目覚めて送信
+    Edge->>Server: 2. POST /api/v1/telemetry (70B)
+    Server-->>Edge: 3. 200 OK (コマンドを含めて返信)
+    
+    Note over Edge: コマンドを実行し、スリープ時間を10秒に変更
+    Edge->>Server: 4. POST /api/v1/commands/ack (Result: SUCCESS)
+    Server-->>Edge: 5. 200 OK (ACK受理)
+    Note over Edge: 10秒間のスリープに移行
+            </div>
+
+            <h3>5.1 コマンド相乗り時の HTTP レスポンス例</h3>
+            <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "status": "OK",
+  "message": "Telemetry accepted",
+  "sleep_interval_sec": 10,
+  "commands": [
+    {
+      "command_id": "cmd-1786942080986903700",
+      "action": "CONFIG_UPDATE",
+      "payload": "{\"sleep_interval_sec\":10}"
+    }
+  ]
+}</code></pre>
+
+            <h3>5.2 サポートするリモートコマンド一覧</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Action 名</th>
+                        <th>パラメータ (Payload)</th>
+                        <th>エッジ側の動作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>CONFIG_UPDATE</code></td>
+                        <td><code>{"sleep_interval_sec": 10}</code></td>
+                        <td>Deep Sleep 待機時間を指定秒数に即時書き換え</td>
+                    </tr>
+                    <tr>
+                        <td><code>REBOOT</code></td>
+                        <td><code>{}</code></td>
+                        <td>ACK 返信後に <code>esp_restart()</code> を実行して再起動</td>
+                    </tr>
+                    <tr>
+                        <td><code>SELF_TEST</code></td>
+                        <td><code>{}</code></td>
+                        <td>I2C センサ、バッテリ ADC、暗号モジュールを自己診断</td>
+                    </tr>
+                    <tr>
+                        <td><code>OTA_TRIGGER</code></td>
+                        <td><code>{"version": "1.1.0"}</code></td>
+                        <td>指定バージョンの OTA ダウンロードシーケンスを開始</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 6. コマンド実行結果 ACK プロトコル -->
+        <section id="sec-6">
+            <h2>6. コマンド実行結果 ACK プロトコル (POST /api/v1/commands/ack)</h2>
+            <p>エッジデバイスはコマンドを実行後、直ちに実行結果ステータスをサーバに報告します。</p>
+
+            <h3>6.1 ACK リクエスト例</h3>
+            <pre><code>POST /api/v1/commands/ack HTTP/1.1
+Host: 192.168.3.4:8443
+Content-Type: application/json
+
+{
+  "command_id": "cmd-1786942080986903700",
+  "device_id": "DEV-ESP32-001",
+  "status": "SUCCESS",
+  "result_payload": "{\"applied_sleep_interval\":10}",
+  "executed_at": 1786942082
+}</code></pre>
+        </section>
+
+        <!-- 7. 暗号化 OTA 更新プロトコル -->
+        <section id="sec-7">
+            <h2>7. 暗号化 OTA 更新プロトコル (GET /api/v1/ota/download/{ver})</h2>
+            <div class="mermaid">
+sequenceDiagram
+    autonumber
+    participant Edge as ESP32-S3
+    participant Server as IoT Server
+
+    Edge->>Server: 1. POST /api/v1/telemetry
+    Server-->>Edge: 2. 200 OK {"ota_available": true, "new_version": "1.1.0", "sha256": "b0bc03..."}
+    
+    Edge->>Server: 3. GET /api/v1/ota/download/1.1.0 (mTLS)
+    Server-->>Edge: 4. 200 OK (Binary Stream)
+    
+    Note over Edge: Secondary Flash 領域に書込 & SHA-256 検証
+    Note over Edge: ブートフラグを更新して再起動 (Rollback 保護)
+            </div>
+        </section>
+
+        <!-- 8. タイムアウト & オフライン再送制御 -->
+        <section id="sec-8">
+            <h2>8. タイムアウト & オフライン再送制御 (リングバッファ)</h2>
+            <p>山間部や地下など、一時的な電波断（圏外）が発生してもデータが欠損しないよう、エッジ内部に <strong>32件の静的リングバッファ</strong> を保持します。</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>状態 / イベント</th>
+                        <th>タイムアウト値</th>
+                        <th>エッジステートマシンの挙動</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Wi-Fi 接続試行</strong></td>
+                        <td>最大 <code>10 秒</code> (20回試行)</td>
+                        <td>接続不能時は Wi-Fi を即時 OFF ➔ データをバッファに Push ➔ スリープ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>TLS ハンドシェイク</strong></td>
+                        <td>最大 <code>3 秒</code></td>
+                        <td>エラー時は接続をクローズ ➔ データをバッファに Push ➔ スリープ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HTTP POST 応答待ち</strong></td>
+                        <td>最大 <code>3 秒</code></td>
+                        <td>200 OK 未達時はデータをバッファに Push ➔ スリープ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>次回通信成功時</strong></td>
+                        <td>-</td>
+                        <td>最新データ送信後、バッファに蓄積された過去データを古い順に自動フラッシュ送信</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 9. エラーコード & 復旧マトリクス -->
+        <section id="sec-9">
+            <h2>9. エラーコード & 復旧マトリクス</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>HTTP Status</th>
+                        <th>エラー理由</th>
+                        <th>エッジデバイス側の対応アクション</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>200 OK</code></td>
+                        <td>正常完了</td>
+                        <td>通常どおり Deep Sleep に移行。</td>
+                    </tr>
+                    <tr>
+                        <td><code>400 Bad Request</code></td>
+                        <td>ペイロード破損 / 不正スキーマ</td>
+                        <td>送信データを破棄し、次回センシングから再試行。</td>
+                    </tr>
+                    <tr>
+                        <td><code>401 Unauthorized</code></td>
+                        <td>クライアント証明書未提示</td>
+                        <td>セキュアエレメント・証明書設定を確認して再起動。</td>
+                    </tr>
+                    <tr>
+                        <td><code>403 Forbidden</code></td>
+                        <td>証明書 CN と DeviceID の不一致</td>
+                        <td>なりすまし検知。通信を停止しエラーログを記録。</td>
+                    </tr>
+                    <tr>
+                        <td><code>500 / 503</code></td>
+                        <td>サーバ側一時障害 / DB ビジー</td>
+                        <td>データをバッファに退避し、指数バックオフで再送。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                darkMode: true,
+                background: '#111827',
+                primaryColor: '#3b82f6',
+                primaryTextColor: '#ffffff',
+                lineColor: '#38bdf8'
+            }
+        });
+    </script>
+</body>
+</html>
