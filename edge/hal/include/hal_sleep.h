@@ -44,6 +44,12 @@ hal_status_t hal_sleep_enable_timer_wakeup(uint32_t sleep_duration_sec);
 hal_status_t hal_sleep_enable_gpio_wakeup(hal_gpio_pin_t pin, hal_gpio_intr_type_t trigger_type);
 
 /**
+ * @brief GPIO割り込みを無効化 (アクティブ処理中のマスク)
+ */
+hal_status_t hal_sleep_disable_gpio_interrupt(hal_gpio_pin_t pin);
+
+
+/**
  * @brief 指定したスリープモードへ移行する
  * @note Deep Sleep の場合、この関数から復帰せず起床時に再起動します。
  */

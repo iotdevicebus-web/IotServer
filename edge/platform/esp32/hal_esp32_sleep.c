@@ -8,6 +8,9 @@
 #if defined(ESP_PLATFORM)
 #include "esp_sleep.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
+#include "driver/rtc_io.h"
+
 
 static const char *TAG = "HAL_ESP32_SLEEP";
 
@@ -22,12 +25,22 @@ hal_status_t hal_sleep_enable_timer_wakeup(uint32_t sleep_duration_sec) {
 }
 
 hal_status_t hal_sleep_enable_gpio_wakeup(hal_gpio_pin_t pin, hal_gpio_intr_type_t trigger_type) {
+    gpio_pullup_en((gpio_num_t)pin);
+    gpio_pulldown_dis((gpio_num_t)pin);
     esp_sleep_ext1_wakeup_mode_t mode = (trigger_type == HAL_GPIO_INTR_LOW_LEVEL) ? 
                                         ESP_EXT1_WAKEUP_ANY_LOW : ESP_EXT1_WAKEUP_ANY_HIGH;
     esp_err_t err = esp_sleep_enable_ext1_wakeup(1ULL << pin, mode);
     ESP_LOGI(TAG, "Configured EXT1 GPIO wakeup on Pin %u", pin);
     return (err == ESP_OK) ? HAL_OK : HAL_ERROR;
 }
+
+hal_status_t hal_sleep_disable_gpio_interrupt(hal_gpio_pin_t pin) {
+    gpio_intr_disable((gpio_num_t)pin);
+    rtc_gpio_deinit((gpio_num_t)pin);
+    ESP_LOGI(TAG, "Disabled GPIO %u interrupt during active processing", pin);
+    return HAL_OK;
+}
+
 
 void hal_sleep_enter(hal_sleep_mode_t mode) {
     if (mode == HAL_SLEEP_MODE_DEEP) {
