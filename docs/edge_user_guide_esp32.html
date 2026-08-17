@@ -290,15 +290,15 @@
         <div class="brand">🔥 ESP32-S3 Edge</div>
         <div class="doc-title">Embedded Manual</div>
         <ul>
-            <li><a href="#sec-1">1. ESP32-S3 版エッジ概要</a></li>
-            <li><a href="#sec-2">2. ハードウェア構成 (Freenove)</a></li>
-            <li><a href="#sec-3">3. ピンアサイン & 結線仕様</a></li>
-            <li><a href="#sec-4">4. 開発環境の準備 (VS Code)</a></li>
-            <li><a href="#sec-5">5. Wi-Fi 設定 & ビルド手順</a></li>
-            <li><a href="#sec-6">6. Flash 書込 & シリアルモニタ</a></li>
-            <li><a href="#sec-7">7. ログファイル自動保存機能</a></li>
-            <li><a href="#sec-8">8. Deep Sleep & 省電力設計</a></li>
-            <li><a href="#sec-9">9. トラブルシューティング (Q&A)</a></li>
+            <li><a href="#sec-1">1. システム概要 & 特徴</a></li>
+            <li><a href="#sec-2">2. ハードウェア構成 & ピンアサイン</a></li>
+            <li><a href="#sec-3">3. 8MB PSRAM & 大容量バッファ</a></li>
+            <li><a href="#sec-4">4. ゼロトラスト mTLS 認証</a></li>
+            <li><a href="#sec-5">5. 完全イベント駆動 (Zero-Polling) & HAL</a></li>
+            <li><a href="#sec-6">6. クイックスタート (ビルド & 書込)</a></li>
+            <li><a href="#sec-7">7. 動作確認 & 実測シリアルログ</a></li>
+            <li><a href="#sec-8">8. ログファイル自動保存機能</a></li>
+            <li><a href="#sec-9">9. トラブルシューティング</a></li>
         </ul>
     </nav>
 
@@ -458,16 +458,17 @@ graph LR
 
         <!-- 5. Wi-Fi 設定 & ビルド手順 -->
         <section id="sec-5">
-            <h2>5. Wi-Fi 設定 & ビルド手順</h2>
-            <p><code>edge/platform/esp32/main.cpp</code> を開き、接続先 Wi-Fi 情報および管理サーバの IP アドレスを設定します。</p>
+            <h2>5. 設定変更 (AppConst.hpp) & ビルド手順</h2>
+            <p>マジックナンバーを排除し品質を高めるため、すべての設定値は <code>edge/platform/esp32/AppConst.hpp</code> で一元管理されています。必要に応じて変更します。</p>
 
-            <pre><code>// edge/platform/esp32/main.cpp 内の設定箇所
-static const char *MY_WIFI_SSID = "ControlAdLab";       // Wi-Fi の SSID
-static const char *MY_WIFI_PASSWORD = "Your_Password";   // Wi-Fi パスワード
-
-// IoT サーバのアドレス (PC のローカル IP アドレス)
-static const char *MY_SERVER_HOST = "192.168.3.4";
-static const int MY_SERVER_PORT = 8443;</code></pre>
+            <pre><code>// edge/platform/esp32/AppConst.hpp 内の設定箇所
+namespace AppConst {
+    constexpr const char* WIFI_SSID     = "ControlAdLab"; // Wi-Fi SSID
+    constexpr const char* WIFI_PASSWORD = "Your_Password"; // Wi-Fi パスワード
+    constexpr const char* SERVER_HOST   = "192.168.3.4";  // PC の IP アドレス
+    constexpr uint16_t    SERVER_PORT   = 8443;           // mTLS ポート番号
+    constexpr uint32_t    DEEP_SLEEP_DURATION_SEC = 15;   // スリープ周期 (秒)
+}</code></pre>
 
             <p>VS Code 画面下部のステータスバーにある <strong>[ ✓ ] (Build ボタン)</strong> をクリックすると、数秒でコンパイルが完了（<code>[SUCCESS]</code>）します。</p>
         </section>
@@ -488,15 +489,17 @@ static const int MY_SERVER_PORT = 8443;</code></pre>
             <pre><code>====================================================
   >>> IoT Platform Edge Firmware Starting! <<<     
   Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)
-  Boot Count: 1 | Free Heap: 8712415 bytes (~8.7 MB)
 ====================================================
+[INTERRUPT] GPIO 4 Interrupt DISABLED during active processing.
+[WAKEUP] ⏰ Periodic Timer Wakeup (15 s elapsed)
 [HARDWARE] >>> 8MB Octal PSRAM Detected & Active! Total: 8189 KB, Free: 8189 KB <<<
 [BUFFER] Allocated High-Capacity Ring Buffer on 8MB PSRAM (Capacity: 10000 records / ~507 KB)
 [CLOCK] Current System Time set to: 1786968000 (2026-08-17 12:00:00 UTC)
 [SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + PKCS#1 Key)...
 [SECURITY] mTLS Credentials fully loaded for DEV-ESP32-001
-[WIFI] Connecting to SSID: 'ControlAdLab' ...
-[WIFI] Connected Successfully! IP: 192.168.3.65 | RSSI: -33 dBm
+[WIFI] Connecting to SSID: 'ControlAdLab' (Event-Driven Mode, Zero-Polling) ...
+[WIFI] Connected Event Received! (Zero-Polling Instant Wake)
+[WIFI] IP Address: 192.168.3.65 | RSSI: -33 dBm
 [SENSOR] Temp: 24.70 C | Humi: 57.10 % | Batt: 4.03 V (94 %)
 [PROTOBUF] Serialized payload size: 81 bytes (vs JSON ~290B)
 [HTTPS] Connecting to https://192.168.3.4:8443/api/v1/telemetry ...
@@ -504,10 +507,14 @@ static const int MY_SERVER_PORT = 8443;</code></pre>
 [HTTPS] Server Response Body:
   {"status":"OK","message":"Telemetry accepted","server_time":1786947861,"sleep_interval_sec":60,"ota":{"available":true,"target_version":"1.1.0"}}
 ====================================================
-[SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)
+[SLEEP] Enabling Wakeup Sources (Interrupts Re-Enabled via HAL):
+  1. Timer Wakeup: 15 seconds
+  2. External GPIO Wakeup: GPIO 4 (Active LOW)
+[SLEEP] Entering Deep Sleep... (Zzz)
 ====================================================</code></pre>
 
         </section>
+
 
         <!-- 7. ログファイル自動保存機能 -->
         <section id="sec-7">
