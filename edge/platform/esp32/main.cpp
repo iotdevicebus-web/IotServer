@@ -10,6 +10,8 @@
 #include <sys/time.h>
 #include <time.h>
 #include <esp_heap_caps.h>
+#include <driver/rtc_io.h>
+
 
 extern "C" {
 #include "osal.h"
@@ -112,9 +114,11 @@ void setup() {
     s_boot_count++;
 
     Serial.println("\n");
-    Serial.println("====================================================");
-    Serial.println("  >>> IoT Platform Edge Firmware Starting! <<<     ");
-    Serial.println("  Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)");
+    // 【割り込み制御】起床検出後、処理完了まで GPIO 4 の割り込みを完全禁止（チャタリングポーリングなし）
+    gpio_intr_disable(GPIO_NUM_4);
+    rtc_gpio_deinit(GPIO_NUM_4);
+    Serial.println("[INTERRUPT] GPIO 4 Interrupt DISABLED during active processing.");
+
     // 起床理由 (Wakeup Cause) の判定とログ出力
     esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
     switch (wakeup_reason) {
@@ -134,6 +138,7 @@ void setup() {
     Serial.println("====================================================");
 
     // 2. 8MB PSRAM 大容量バッファの初期化 & 時計セット
+
 
     init_psram_buffer();
     init_fast_clock();
