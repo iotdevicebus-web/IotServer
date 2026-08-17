@@ -20,10 +20,12 @@ import (
 
 
 type ApiHandler struct {
-	repo         storage.Repository
-	otaMu        sync.RWMutex
-	availableOTA *models.OtaInfo
-	ruleEngine   *alerting.RuleEngine
+	repo               storage.Repository
+	otaMu              sync.RWMutex
+	availableOTA       *models.OtaInfo
+	ruleEngine         *alerting.RuleEngine
+	deviceSleepMu      sync.RWMutex
+	deviceSleepConfigs map[string]uint32
 }
 
 func NewApiHandler(repo storage.Repository, webhookURL string) *ApiHandler {
@@ -41,9 +43,11 @@ func NewApiHandler(repo storage.Repository, webhookURL string) *ApiHandler {
 			SizeBytes:     uint32(len(dummyBin) * 1024),
 			Mandatory:     false,
 		},
-		ruleEngine: alerting.NewRuleEngine(alerting.DefaultThresholds(), webhookURL, repo),
+		ruleEngine:         alerting.NewRuleEngine(alerting.DefaultThresholds(), webhookURL, repo),
+		deviceSleepConfigs: make(map[string]uint32),
 	}
 }
+
 
 // HandleTelemetry POST /api/v1/telemetry
 func (h *ApiHandler) HandleTelemetry(w http.ResponseWriter, r *http.Request) {
@@ -124,13 +128,15 @@ func (h *ApiHandler) HandleTelemetry(w http.ResponseWriter, r *http.Request) {
 	}
 	h.otaMu.RUnlock()
 
-	// 3. 次回スリープ間隔の決定 (動的制御)
-	sleepIntervalSec := uint32(60)
-	if payload.Metrics.BatteryLevelPct < 20 {
-		sleepIntervalSec = 300 // バッテリ低下時は間隔延長
+	// 3. 次回スリープ間隔の決定 (デバイス設定の永続保持)
+	h.deviceSleepMu.RLock()
+	sleepIntervalSec, exists := h.deviceSleepConfigs[payload.Header.DeviceID]
+	h.deviceSleepMu.RUnlock()
+	if !exists || sleepIntervalSec == 0 {
+		sleepIntervalSec = 60 // デフォルト値
 	}
 
-	// 4. 保留中リモートコマンドの取得 & CONFIG_UPDATE からスリープ間隔を即時反映
+	// 4. 保留中リモートコマンドの取得 & CONFIG_UPDATE からスリープ間隔を更新・永続保持
 	pendingCmds, _ := h.repo.GetPendingCommands(payload.Header.DeviceID)
 	if len(pendingCmds) > 0 {
 		log.Printf("[COMMAND DISPATCH] Piggybacking %d remote commands to device %s", len(pendingCmds), payload.Header.DeviceID)
@@ -138,11 +144,19 @@ func (h *ApiHandler) HandleTelemetry(w http.ResponseWriter, r *http.Request) {
 			if cmd.Action == "CONFIG_UPDATE" && cmd.Params != nil {
 				if sVal, ok := cmd.Params["sleep_interval_sec"].(float64); ok && sVal > 0 {
 					sleepIntervalSec = uint32(sVal)
-					log.Printf("[CONFIG UPDATE] Dynamic Sleep Interval set to %d sec for device %s", sleepIntervalSec, payload.Header.DeviceID)
+					h.deviceSleepMu.Lock()
+					h.deviceSleepConfigs[payload.Header.DeviceID] = sleepIntervalSec
+					h.deviceSleepMu.Unlock()
+					log.Printf("[CONFIG UPDATE] Persistent Sleep Interval set to %d sec for device %s", sleepIntervalSec, payload.Header.DeviceID)
 				}
 			}
 		}
 	}
+
+	if payload.Metrics.BatteryLevelPct < 20 {
+		sleepIntervalSec = 300 // バッテリ低下時は安全のため延長
+	}
+
 
 
 
@@ -184,6 +198,17 @@ func (h *ApiHandler) HandleQueueCommand(w http.ResponseWriter, r *http.Request) 
 		Action:    req.Action,
 		Params:    req.Params,
 	}
+
+	// CONFIG_UPDATE の場合、サーバ側でスリープ設定を即座に記憶
+	if req.Action == "CONFIG_UPDATE" && req.Params != nil {
+		if sVal, ok := req.Params["sleep_interval_sec"].(float64); ok && sVal > 0 {
+			h.deviceSleepMu.Lock()
+			h.deviceSleepConfigs[req.DeviceID] = uint32(sVal)
+			h.deviceSleepMu.Unlock()
+			log.Printf("[CONFIG SAVED] Sleep interval for %s persistently set to %d sec", req.DeviceID, uint32(sVal))
+		}
+	}
+
 
 	if err := h.repo.QueueCommand(req.DeviceID, cmd); err != nil {
 		writeError(w, http.StatusInternalServerError, "ERROR", fmt.Sprintf("Failed to queue command: %v", err))
