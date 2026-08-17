@@ -22,7 +22,7 @@ extern "C" {
 
 // Wi-Fi 接続設定 (適宜ご自身の環境に合わせて書き換えてください)
 static const char *MY_WIFI_SSID = "ControlAdLab";
-static const char *MY_WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // ※実環境に合わせて維持
+static const char *MY_WIFI_PASSWORD = "ControlAD"; // ※実環境に合わせて維持
 
 // IoT サーバのアドレス (PC の IP アドレス)
 static const char *MY_SERVER_HOST = "192.168.3.4";
@@ -40,11 +40,13 @@ static RTC_DATA_ATTR uint32_t s_boot_count = 0;
  */
 static void init_fast_clock() {
     time_t now = time(nullptr);
-    if (now < 1700000000) {
-        struct timeval tv = { .tv_sec = 1786944000, .tv_usec = 0 }; // 2026-08-17 UTC
+    if (now < 1786944000) {
+        // 証明書発行時刻 (2026-08-17 05:52:09 UTC) より後の有効時刻 (2026-08-17 12:00:00 UTC = 1786968000) をセット
+        struct timeval tv = { .tv_sec = 1786968000, .tv_usec = 0 };
         settimeofday(&tv, nullptr);
     }
 }
+
 
 void setup() {
     // 1. ハードウェア UART シリアルの初期化 (確実にログを流すため1秒待機)
