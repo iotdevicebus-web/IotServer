@@ -98,14 +98,16 @@ void setup() {
     s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);
     s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);
 
-    // 4. Wi-Fi 接続試行
+    // 4. Wi-Fi 接続試行 (タイムアウトを最大15秒に設定)
     Serial.printf("[WIFI] Connecting to SSID: '%s' ...\n", MY_WIFI_SSID);
+    WiFi.disconnect(true);
+    delay(100);
     WiFi.mode(WIFI_STA);
     WiFi.begin(MY_WIFI_SSID, MY_WIFI_PASSWORD);
 
     int retry = 0;
-    while (WiFi.status() != WL_CONNECTED && retry < 20) {
-        delay(200);
+    while (WiFi.status() != WL_CONNECTED && retry < 30) { // 500ms * 30 = 15秒間待機
+        delay(500);
         Serial.print(".");
         retry++;
     }
@@ -117,8 +119,15 @@ void setup() {
         // 爆速 NTP 同期 (初回のみ IP 直指定で同期、2回目以降は 0ms)
         sync_time_via_fast_ntp();
     } else {
-        Serial.println("\n[WIFI] Connection Failed. Buffering offline!");
+        Serial.println("\n[WIFI] Connection Failed! Status code: " + String(WiFi.status()));
+        if (String(MY_WIFI_PASSWORD) == "YOUR_WIFI_PASSWORD") {
+            Serial.println("[WIFI ERROR] >>> パスワードが初期値 'YOUR_WIFI_PASSWORD' のままです！ main.cpp の MY_WIFI_PASSWORD を設定してください <<<");
+        } else {
+            Serial.println("[WIFI ERROR] >>> Wi-Fiのパスワードまたは電波状態を確認してください <<<");
+        }
+        Serial.println("[WIFI] Buffering offline to ring buffer...");
     }
+
 
     // 5. テレメトリデータの作成 (ダミー / センサ値)
     telemetry_data_t data;
