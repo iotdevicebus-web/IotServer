@@ -269,12 +269,13 @@
                     <!-- コマンド待機中インジケータ -->
                     <div id="cmd-pending-box" style="display: none; background: rgba(245, 158, 11, 0.15); border: 1px solid #f59e0b; color: #fbbf24; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                         <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; animation: pulse 1.5s infinite;"></span>
-                        <span id="cmd-pending-text">⏳ コマンド送信待ちです (次回起床時に配信)</span>
+                        <span id="cmd-pending-text">⏳ コマンド送信待ちです (0秒経過 - 次回起床時に配信)</span>
                     </div>
 
                     <div id="cmd-success-box" style="display: none; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #34d399; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-bottom: 12px;">
-                        ✅ コマンドがエッジデバイスに送信・適用されました
+                        <span id="cmd-success-text">✅ コマンドがエッジデバイスに送信・適用されました</span>
                     </div>
+
 
                     <div class="cmd-actions">
                         <button class="btn btn-cyan" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 10})">⏱ スリープ10秒に変更</button>
@@ -325,11 +326,13 @@
         let tempChartInstance = null;
         let batteryChartInstance = null;
         let lastPendingCount = {};
+        let commandPendingStartTimes = {};
 
         async function initDashboard() {
             initCharts();
             await fetchData();
-            setInterval(fetchData, 2000); // 2秒間隔でリアルタイム更新
+            setInterval(fetchData, 2000);         // 2秒間隔でデータ更新
+            setInterval(updateElapsedTimer, 1000); // 1秒間隔で経過秒数をカウントアップ
         }
 
         function showToast(msg) {
@@ -338,6 +341,19 @@
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 3500);
         }
+
+        function updateElapsedTimer() {
+            if (!selectedDevice) return;
+            const startTime = commandPendingStartTimes[selectedDevice];
+            const pendingBox = document.getElementById('cmd-pending-box');
+            
+            if (startTime && pendingBox && pendingBox.style.display !== 'none') {
+                const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('cmd-pending-text').innerText = 
+                    `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
+            }
+        }
+
 
 
         function initCharts() {
@@ -462,17 +478,28 @@
                     const successBox = document.getElementById('cmd-success-box');
                     
                     if (d.pending_commands_count > 0) {
+                        if (!commandPendingStartTimes[d.device_id]) {
+                            commandPendingStartTimes[d.device_id] = Date.now();
+                        }
+                        const elapsedSec = Math.floor((Date.now() - commandPendingStartTimes[d.device_id]) / 1000);
                         pendingBox.style.display = 'flex';
                         successBox.style.display = 'none';
-                        document.getElementById('cmd-pending-text').innerText = `⏳ コマンド送信待ちです (エッジの次回起床時に配信されます: ${d.pending_commands_count}件)`;
+                        document.getElementById('cmd-pending-text').innerText = 
+                            `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
                     } else {
-                        if (lastPendingCount[d.device_id] > 0) {
+                        if (lastPendingCount[d.device_id] > 0 && commandPendingStartTimes[d.device_id]) {
                             // 送信完了通知を表示
+                            const totalSec = Math.floor((Date.now() - commandPendingStartTimes[d.device_id]) / 1000);
                             pendingBox.style.display = 'none';
                             successBox.style.display = 'block';
-                            setTimeout(() => { successBox.style.display = 'none'; }, 4000);
+                            document.getElementById('cmd-success-text').innerText = 
+                                `✅ コマンドがエッジデバイスに送信・適用されました (所要時間: ${totalSec}秒)`;
+                            delete commandPendingStartTimes[d.device_id];
+                            setTimeout(() => { successBox.style.display = 'none'; }, 5000);
                         } else {
-                            pendingBox.style.display = 'none';
+                            if (!commandPendingStartTimes[d.device_id]) {
+                                pendingBox.style.display = 'none';
+                            }
                         }
                     }
                     lastPendingCount[d.device_id] = d.pending_commands_count;
@@ -517,12 +544,13 @@
                 return;
             }
             try {
-                // UI に即座に「コマンド送信待ちです」を表示
+                // UI に即座に「コマンド送信待ちです (0秒経過)」を表示 & 開始時刻記録
+                commandPendingStartTimes[selectedDevice] = Date.now();
                 const pendingBox = document.getElementById('cmd-pending-box');
                 const successBox = document.getElementById('cmd-success-box');
                 pendingBox.style.display = 'flex';
                 successBox.style.display = 'none';
-                document.getElementById('cmd-pending-text').innerText = "⏳ コマンド送信待ちです (エッジの次回起床時に自動配信されます)";
+                document.getElementById('cmd-pending-text').innerText = "⏳ コマンド送信待ちです (0秒経過 - エッジの次回起床時に自動配信されます)";
 
                 const res = await fetch('/api/v1/commands', {
                     method: 'POST',
@@ -539,10 +567,12 @@
                     await fetchData();
                 } else {
                     alert(`コマンド送信エラー: ${data.message}`);
+                    delete commandPendingStartTimes[selectedDevice];
                     pendingBox.style.display = 'none';
                 }
             } catch (err) {
                 alert(`送信失敗: ${err}`);
+                delete commandPendingStartTimes[selectedDevice];
             }
         }
 
