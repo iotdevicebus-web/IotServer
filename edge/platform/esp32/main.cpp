@@ -115,10 +115,26 @@ void setup() {
     Serial.println("====================================================");
     Serial.println("  >>> IoT Platform Edge Firmware Starting! <<<     ");
     Serial.println("  Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)");
-    Serial.printf ("  Boot Count: %u | Free Heap: %u bytes\n", s_boot_count, esp_get_free_heap_size());
+    // 起床理由 (Wakeup Cause) の判定とログ出力
+    esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+    switch (wakeup_reason) {
+        case ESP_SLEEP_WAKEUP_EXT1:
+        case ESP_SLEEP_WAKEUP_EXT0: {
+            uint64_t pin_mask = esp_sleep_get_ext1_wakeup_status();
+            Serial.printf("[WAKEUP] 🔔 >>> External GPIO 4 Interrupt Wakeup Triggered! <<< (Mask: 0x%llX)\n", pin_mask);
+            break;
+        }
+        case ESP_SLEEP_WAKEUP_TIMER:
+            Serial.println("[WAKEUP] ⏰ Periodic Timer Wakeup (15s elapsed)");
+            break;
+        default:
+            Serial.printf("[WAKEUP] ⚡ Initial Power-On Reset (Cause: %d)\n", wakeup_reason);
+            break;
+    }
     Serial.println("====================================================");
 
     // 2. 8MB PSRAM 大容量バッファの初期化 & 時計セット
+
     init_psram_buffer();
     init_fast_clock();
 
@@ -204,17 +220,30 @@ void setup() {
             s_psram_buffer.count, s_psram_buffer.capacity);
     }
 
-    // 8. Deep Sleep 移行 (15 秒間スリープ)
+    // 8. Deep Sleep 移行設定 (タイマー 15秒 + GPIO 4 LOW 外部割り込み)
     Serial.println("====================================================");
-    Serial.println("[SLEEP] Entering Deep Sleep for 15 seconds... (Zzz)");
+    Serial.println("[SLEEP] Enabling Wakeup Sources:");
+    Serial.println("  1. Timer Wakeup: 15 seconds");
+    Serial.println("  2. External GPIO Wakeup: GPIO 4 (Active LOW)");
+    Serial.println("[SLEEP] Entering Deep Sleep... (Zzz)");
     Serial.println("====================================================\n");
     Serial.flush();
     digitalWrite(LED_PIN, LOW); // LED消灯
 
+    // GPIO 4 のプルアップ設定 & EXT1 外部割り込み起床の有効化 (LOW で起床)
+    pinMode(4, INPUT_PULLUP);
+    gpio_pullup_en(GPIO_NUM_4);
+    gpio_pulldown_dis(GPIO_NUM_4);
+    esp_sleep_enable_ext1_wakeup((1ULL << GPIO_NUM_4), ESP_EXT1_WAKEUP_ANY_LOW);
+
+    // 15 秒タイマー起床の有効化
     esp_sleep_enable_timer_wakeup(15ULL * 1000000ULL);
+
+    // Deep Sleep 開始
     esp_deep_sleep_start();
 }
 
 void loop() {
     // Deep Sleep のため loop は実行されません
 }
+
