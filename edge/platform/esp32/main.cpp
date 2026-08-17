@@ -36,7 +36,7 @@ static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
 
 /**
- * @brief 爆速時刻セット (0ms)
+ * @brief 爆速時刻セット (0ms で有効期間内時刻をセット)
  */
 static void init_fast_clock() {
     time_t now = time(nullptr);
@@ -59,7 +59,7 @@ void setup() {
     Serial.println("\n");
     Serial.println("====================================================");
     Serial.println("  >>> IoT Platform Edge Firmware Starting! <<<     ");
-    Serial.println("  Hardware: Freenove ESP32-S3 WROOM                 ");
+    Serial.println("  Hardware: Freenove ESP32-S3 WROOM (mTLS Full)     ");
     Serial.printf ("  Boot Count: %u | Free Heap: %u bytes\n", s_boot_count, esp_get_free_heap_size());
     Serial.println("====================================================");
 
@@ -67,13 +67,12 @@ void setup() {
     telemetry_buffer_init(&s_buffer);
     init_fast_clock();
 
-    // 3. mTLS クライアント証明書の設定
-    //    (クライアント証明書をサーバへ提出してゼロトラスト認証を受けつつ、MbedTLSのホスト名検証エラーを回避)
-    Serial.println("[SECURITY] Configuring X.509 mTLS Client Certificate & Private Key...");
-    s_secure_client.setInsecure(); // サーバ側の自己署名SANパースエラーを回避
-    s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);     // デバイス固有証明書
+    // 3. mTLS 相互TLS証明書の設定 (Root CA + クライアント証明書 + 秘密鍵)
+    Serial.println("[SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + Key)...");
+    s_secure_client.setCACert(IOT_ROOT_CA_CERT);               // サーバ検証用 Root CA
+    s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);     // デバイス固有証明書 (DEV-ESP32-001)
     s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);      // デバイス秘密鍵
-    Serial.println("[SECURITY] mTLS Credentials loaded for " IOT_DEVICE_ID);
+    Serial.println("[SECURITY] mTLS Credentials fully configured for " IOT_DEVICE_ID);
 
     // 4. Wi-Fi 接続試行
     Serial.printf("[WIFI] Connecting to SSID: '%s' ...\n", MY_WIFI_SSID);
