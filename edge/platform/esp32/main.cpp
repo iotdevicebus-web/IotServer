@@ -40,12 +40,13 @@ static RTC_DATA_ATTR uint32_t s_boot_count = 0;
  */
 static void init_fast_clock() {
     time_t now = time(nullptr);
-    if (now < 1786944000) {
-        // 証明書発行時刻 (2026-08-17 05:52:09 UTC) より後の有効時刻 (2026-08-17 12:00:00 UTC = 1786968000) をセット
-        struct timeval tv = { .tv_sec = 1786968000, .tv_usec = 0 };
-        settimeofday(&tv, nullptr);
-    }
+    // 確実に証明書有効期間内 (2026-08-17 12:00:00 UTC = 1786968000) をセット
+    struct timeval tv = { .tv_sec = 1786968000, .tv_usec = 0 };
+    settimeofday(&tv, nullptr);
+    now = time(nullptr);
+    Serial.printf("[CLOCK] Current System Time set to: %lu (2026-08-17 12:00:00 UTC)\n", (unsigned long)now);
 }
+
 
 
 void setup() {

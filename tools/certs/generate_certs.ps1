@@ -75,9 +75,20 @@ Write-Host "  -> クライアント証明書発行完了: $clientCrt" -Foregroun
 $headerFile = Join-Path $outputDir "device_certs.h"
 Write-Host "エッジ用 C言語ヘッダ ($headerFile) を出力中..." -ForegroundColor Green
 
+# クライアント秘密鍵を MbedTLS (ESP32) 互換の PKCS#1 (BEGIN RSA PRIVATE KEY) 形式に変換
+$pkcs1Key = Join-Path $outputDir "client_${DeviceId}_rsa.key"
+openssl rsa -in $clientKey -traditional -out $pkcs1Key 2>$null
+if (Test-Path $pkcs1Key) {
+    $clientKeyContent = (Get-Content $pkcs1Key -Raw).Trim()
+} else {
+    $clientKeyContent = (Get-Content $clientKey -Raw).Trim()
+}
+
+
 $caCrtContent = (Get-Content $caCrt -Raw).Trim()
 $clientCrtContent = (Get-Content $clientCrt -Raw).Trim()
-$clientKeyContent = (Get-Content $clientKey -Raw).Trim()
+
+
 
 $cHeader = @"
 /**
