@@ -60,7 +60,7 @@ func main() {
 	fs := http.FileServer(http.Dir("./web"))
 	webMux.Handle("/", fs)
 
-	// システム総合仕様書 & 取扱説明書 & プロトコル仕様書 & 画像ファイル配信
+	// システム総合仕様書 & 取扱説明書 & プロトコル仕様書 & STM32説明書 & 画像ファイル配信
 	webMux.HandleFunc("/spec", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "../docs/system_specification.html")
 	})
@@ -70,7 +70,11 @@ func main() {
 	webMux.HandleFunc("/protocol", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "../docs/protocol_specification.html")
 	})
+	webMux.HandleFunc("/stm32", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "../docs/edge_user_guide_stm32.html")
+	})
 	webMux.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("../docs/images"))))
+
 
 
 

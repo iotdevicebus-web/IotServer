@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STM32 エッジファームウェア 取扱説明書・導入マニュアル</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Mermaid.js for Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-glow: rgba(2, 132, 199, 0.2);
+            --bg: #0b1329;
+            --surface: #132240;
+            --surface-hover: #1e335e;
+            --border: #1e335e;
+            --border-highlight: #334e80;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --code-bg: #060b17;
+            --sidebar-width: 290px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.75;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* サイドバー目次 */
+        #sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            padding: 24px 16px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        #sidebar .brand {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #sidebar .doc-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #sidebar ul {
+            list-style: none;
+        }
+
+        #sidebar li {
+            margin-bottom: 4px;
+        }
+
+        #sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            display: block;
+            padding: 7px 12px;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+
+        #sidebar a:hover {
+            color: #ffffff;
+            background-color: var(--surface-hover);
+        }
+
+        /* メインコンテンツ */
+        #main-content {
+            flex: 1;
+            padding: 48px 64px;
+            max-width: 1140px;
+            overflow-y: auto;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            background: var(--primary-glow);
+            color: #7dd3fc;
+            border: 1px solid rgba(2, 132, 199, 0.4);
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .meta-bar {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 36px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h2 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 48px;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: "";
+            display: inline-block;
+            width: 4px;
+            height: 1.2em;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            margin-top: 28px;
+            margin-bottom: 12px;
+        }
+
+        p, ul, ol {
+            margin-bottom: 16px;
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        /* テーブル */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        th {
+            background-color: rgba(6, 11, 23, 0.6);
+            color: #94a3b8;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background-color: rgba(30, 51, 94, 0.4);
+        }
+
+        /* コードブロック */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-highlight);
+            border-radius: 8px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            line-height: 1.6;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background-color: rgba(6, 11, 23, 0.8);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #38bdf8;
+            font-size: 0.85em;
+            border: 1px solid rgba(30, 51, 94, 0.8);
+        }
+
+        /* カード・ボックス */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--accent-amber);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        /* Mermaid コンテナ */
+        .mermaid {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media print {
+            body { background: white; color: black; }
+            #sidebar { display: none; }
+            #main-content { padding: 0; max-width: 100%; }
+            table, pre, .mermaid, .card { border: 1px solid #ccc; background: white; color: black; }
+            h1, h2, h3 { color: black; }
+            code { color: #111; background: #eee; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- サイドバー目次 -->
+    <nav id="sidebar">
+        <div class="brand">🔷 STM32 Edge Guide</div>
+        <div class="doc-title">Embedded Manual</div>
+        <ul>
+            <li><a href="#sec-1">1. STM32 版エッジ概要</a></li>
+            <li><a href="#sec-2">2. 推奨ボード & ハードウェア構成</a></li>
+            <li><a href="#sec-3">3. ピンアサイン & 結線仕様</a></li>
+            <li><a href="#sec-4">4. ビルド環境の構築 (ARM GCC)</a></li>
+            <li><a href="#sec-5">5. コンパイル & ビルド手順</a></li>
+            <li><a href="#sec-6">6. Flash 書込手順 (ST-LINK)</a></li>
+            <li><a href="#sec-7">7. 動作確認 & シリアルログ</a></li>
+            <li><a href="#sec-8">8. メモリ配置 & 省電力設計</a></li>
+            <li><a href="#sec-9">9. トラブルシューティング (Q&A)</a></li>
+        </ul>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main id="main-content">
+        <div class="badge-tag">STM32 CORTEX-M SERIES MANUAL</div>
+        <h1>STM32 版エッジファームウェア 取扱説明書・導入マニュアル</h1>
+        <div class="meta-bar">
+            <span><strong>マニュアル番号:</strong> MAN-STM32-2026-V1</span>
+            <span><strong>対象コア:</strong> ARM Cortex-M4 / Cortex-M0+ / M3 / M7</span>
+            <span><strong>検証ボード:</strong> NUCLEO-F401RE / L476RG</span>
+            <span><strong>更新日:</strong> 2026-08-17</span>
+        </div>
+
+        <!-- 1. STM32 版エッジ概要 -->
+        <section id="sec-1">
+            <h2>1. STM32 版エッジ概要</h2>
+            <p>本ファームウェアは、STMicroelectronics 社の <strong>STM32 マイコン（ARM Cortex-M シリーズ）</strong> 向けに最適化された超軽量・高信頼 IoT エッジ基盤です。HAL（Hardware Abstraction Layer）および OSAL（OS Abstraction Layer）により、マイコンのペリフェラルや RTOS 実装から完全に抽象化されています。</p>
+
+            <div class="card">
+                <h3>主な特徴とスペック</h3>
+                <ul>
+                    <li><strong>極小メモリフットプリント:</strong> Flash(ROM) <strong>約 3.6 KB</strong> / SRAM(RAM) <strong>約 3.7 KB</strong>（※32件リングバッファ含む）。</li>
+                    <li><strong>ゼロ・ダイナミックメモリ:</strong> <code>malloc()</code> / <code>free()</code> を完全排除。ヒープ枯渇や断片化による長期稼働停止を根絶。</li>
+                    <li><strong>mTLS ゼロトラスト暗号化:</strong> デバイス固有証明書（<code>DEV-STM32-002</code>）による安全な通信。</li>
+                    <li><strong>Protocol Buffers v3 直列化:</strong> ピュア C99 でバイナリを直接生成し、パケットを約 81% 削減。</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- 2. 推奨ボード & ハードウェア構成 -->
+        <section id="sec-2">
+            <h2>2. 推奨ボード & ハードウェア構成</h2>
+            <div class="mermaid">
+graph LR
+    subgraph "STM32 Nucleo Board"
+        MCU["STM32F401RE / L476RG<br/>(Cortex-M4 Core)"]
+        LED["User LED (PA5)"]
+        BTN["User Button (PC13)"]
+    end
+
+    subgraph "I2C ペリフェラル"
+        SHT["温湿度センサ (SHT31 / BME280)"]
+        HSM["Secure Element (ATECC608A)"]
+    end
+
+    subgraph "通信モジュール"
+        MODEM["Wi-Fi / LTE-M モデム<br/>(UART / SPI 接続)"]
+    end
+
+    MCU -- "I2C1 (PB8/PB9)" --> SHT & HSM
+    MCU -- "USART1 (PA9/PA10)" --> MODEM
+    MCU --- LED
+    MCU --- BTN
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>コンポーネント</th>
+                        <th>推奨型番 / モジュール</th>
+                        <th>接続インターフェース</th>
+                        <th>役割</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>マイコンボード</strong></td>
+                        <td>STM32 Nucleo-F401RE / Nucleo-L476RG</td>
+                        <td>オンボード ST-LINK/V2-1 搭載</td>
+                        <td>メイン制御・センシング・暗号化</td>
+                    </tr>
+                    <tr>
+                        <td><strong>温湿度センサ</strong></td>
+                        <td>Sensirion SHT31 / SHT30 / BME280</td>
+                        <td><strong>I2C1</strong> (アドレス <code>0x44</code> / <code>0x76</code>)</td>
+                        <td>温度・湿度・気圧の定期測定</td>
+                    </tr>
+                    <tr>
+                        <td><strong>セキュアエレメント</strong></td>
+                        <td>Microchip ATECC608A / OPTIGA Trust M</td>
+                        <td><strong>I2C1</strong> (アドレス <code>0x60</code>)</td>
+                        <td>秘密鍵の物理保護 & ECDSA 署名生成</td>
+                    </tr>
+                    <tr>
+                        <td><strong>通信モジュール</strong></td>
+                        <td>ESP-AT Wi-Fi / SIM7080G (LTE-M)</td>
+                        <td><strong>USART1</strong> (115200 bps)</td>
+                        <td>インターネット管理サーバへの TLS 接続</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 3. ピンアサイン & 結線仕様 -->
+        <section id="sec-3">
+            <h2>3. ピンアサイン & 結線仕様 (STM32 Nucleo 準拠)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nucleo ピン名</th>
+                        <th>STM32 GPIO</th>
+                        <th>ペリフェラル機能</th>
+                        <th>接続先 / 役割</th>
+                        <th>回路仕様</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>`+3V3`</strong></td>
+                        <td>VDD</td>
+                        <td>3.3V 電源出力</td>
+                        <td>各センサ・暗号ICの <code>VCC</code></td>
+                        <td>最大 300mA 出力</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`GND`</strong></td>
+                        <td>VSS</td>
+                        <td>グランド</td>
+                        <td>各モジュールの <code>GND</code></td>
+                        <td>共通グランド</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`D15`</strong></td>
+                        <td><strong>PB8</strong></td>
+                        <td><strong>I2C1_SCL</strong></td>
+                        <td>SHT31 / ATECC608A の <code>SCL</code></td>
+                        <td>4.7kΩ プルアップ抵抗</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`D14`</strong></td>
+                        <td><strong>PB9</strong></td>
+                        <td><strong>I2C1_SDA</strong></td>
+                        <td>SHT31 / ATECC608A の <code>SDA</code></td>
+                        <td>4.7kΩ プルアップ抵抗</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`A0`</strong></td>
+                        <td><strong>PA0</strong></td>
+                        <td><strong>ADC1_IN0</strong></td>
+                        <td>バッテリ電圧測定</td>
+                        <td>1/2 分圧抵抗 (100kΩ + 100kΩ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`D8`</strong></td>
+                        <td><strong>PA9</strong></td>
+                        <td><strong>USART1_TX</strong></td>
+                        <td>通信モデムの <code>RXD</code></td>
+                        <td>3.3V UART (115200bps)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`D2`</strong></td>
+                        <td><strong>PA10</strong></td>
+                        <td><strong>USART1_RX</strong></td>
+                        <td>通信モデムの <code>TXD</code></td>
+                        <td>3.3V UART (115200bps)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`B1 (青ボタン)`</strong></td>
+                        <td><strong>PC13</strong></td>
+                        <td><strong>EXTI13</strong></td>
+                        <td>外部割り込み起床スイッチ</td>
+                        <td>Active Low (内部プルアップ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`LD2 (緑LED)`</strong></td>
+                        <td><strong>PA5</strong></td>
+                        <td><strong>GPIO_Output</strong></td>
+                        <td>ステータス表示 LED</td>
+                        <td>通信中点灯・スリープ時消灯</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 4. ビルド環境の構築 -->
+        <section id="sec-4">
+            <h2>4. ビルド環境の構築 (ARM GCC & CMake)</h2>
+            <p>本プロジェクトは、STM32CubeCLT またはスタンドアロンの GNU ARM Embedded Toolchain でコンパイル可能です。</p>
+
+            <div class="card">
+                <h3>推奨ツールチェーン</h3>
+                <ul>
+                    <li><strong>コンパイラ:</strong> <code>arm-none-eabi-gcc 13.x+</code></li>
+                    <li><strong>ビルドシステム:</strong> <code>CMake 3.20+</code> ＆ <code>Ninja 1.10+</code></li>
+                    <li><strong>書き込みツール:</strong> <code>STM32CubeProgrammer</code> または <code>OpenOCD</code></li>
+                </ul>
+            </div>
+
+            <pre><code># 環境変数の設定例 (Windows PowerShell)
+$env:PATH = "C:\ST\STM32CubeCLT_1.19.0\GNU-tools-for-STM32\bin;C:\ST\STM32CubeCLT_1.19.0\Ninja\bin;" + $env:PATH</code></pre>
+        </section>
+
+        <!-- 5. コンパイル & ビルド手順 -->
+        <section id="sec-5">
+            <h2>5. コンパイル & ビルド手順</h2>
+            <p>CMake と Ninja を使用して、警告ゼロ（Warning-Free）で静的ライブラリ (`libstm32_edge_lib.a`) を生成します。</p>
+
+            <pre><code># 1. STM32 ビルドディレクトリへ移動
+cd edge/platform/stm32
+
+# 2. CMake 構成 (Cortex-M4 クロスコンパイル設定)
+cmake -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=arm-toolchain.cmake
+
+# 3. Ninja で高速ビルド
+ninja -C build
+
+# 4. バイナリサイズの確認 (arm-none-eabi-size)
+arm-none-eabi-size build/libstm32_edge_lib.a</code></pre>
+
+            <div class="alert-success">
+                <strong>ビルド出力結果:</strong><br>
+                <code>[3/3] Linking C static library libstm32_edge_lib.a</code> ➔ <strong>エラー・警告ゼロで完了します。</strong>
+            </div>
+        </section>
+
+        <!-- 6. Flash 書込手順 -->
+        <section id="sec-6">
+            <h2>6. Flash 書込手順 (ST-LINK)</h2>
+            <p>Nucleo ボードの USB ポート（ST-LINK）を PC に接続し、STM32CubeProgrammer CLI で書き込みます。</p>
+
+            <pre><code># STM32CubeProgrammer CLI による書き込み
+STM32_Programmer_CLI.exe -c port=SWD -w build/stm32_edge_firmware.bin 0x08000000 -v -rst</code></pre>
+        </section>
+
+        <!-- 7. 動作確認 & シリアルログ -->
+        <section id="sec-7">
+            <h2>7. 動作確認 & シリアルログの見方</h2>
+            <p>Tera Term や VS Code シリアルモニタ（ボーレート: <code>115200</code>）を開くと、以下のログが表示されます。</p>
+
+            <pre><code>====================================================
+  IoT Platform Edge Starting (STM32 Cortex-M4)
+  Device ID: DEV-STM32-002 | FW: 1.0.0
+====================================================
+[HAL STM32] Clocks & Power (STOP Mode) Initialized.
+[HAL STM32] I2C1 Bus Ready. Probing SHT31 & ATECC608A... OK!
+[HAL STM32] ADC1 Calibrated. Battery: 3.90 V (75 %)
+[HAL STM32] SENSOR -> Temp: 22.37 C, Humi: 52.10 %
+[PROTOBUF] Serialized payload size: 68 bytes
+[HAL STM32] Connecting via TLS 1.3 mTLS...
+[HAL STM32] Certificate Verified: CN=DEV-STM32-002
+[HAL STM32] POST /api/v1/telemetry -> 200 OK (RoundTrip: 3.5ms)
+[APP] Server Response: {"status":"OK","sleep_interval_sec":60}
+[HAL STM32] Entering Low-Power STOP Mode for 60s... (Zzz)</code></pre>
+        </section>
+
+        <!-- 8. メモリ配置 & 省電力設計 -->
+        <section id="sec-8">
+            <h2>8. メモリ配置 & 省電力設計</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>STM32 動作モード</th>
+                        <th>消費電流 (目安)</th>
+                        <th>ペリフェラル状態</th>
+                        <th>復帰トリガー</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Run モード (84MHz)</strong></td>
+                        <td>約 15 mA</td>
+                        <td>CPU全開、センシング、Protobufエンコード</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sleep モード</strong></td>
+                        <td>約 4 mA</td>
+                        <td>CPU停止、DMA/I2C/UART 転送待機中</td>
+                        <td>UART受信割り込み</td>
+                    </tr>
+                    <tr>
+                        <td><strong>STOP モード (推奨)</strong></td>
+                        <td><strong>約 15 µA</strong></td>
+                        <td>SRAM保持、全クロック停止、RTC動作</td>
+                        <td>RTC Alarm / EXTI (PC13)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standby モード</strong></td>
+                        <td>約 2.5 µA</td>
+                        <td>SRAM消去、バックアップレジスタのみ保持</td>
+                        <td>WKUP ピン / RTC Alarm</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 9. トラブルシューティング -->
+        <section id="sec-9">
+            <h2>9. トラブルシューティング (Q&A)</h2>
+            <div class="card">
+                <h3>Q. ST-LINK でマイコンが認識されません</h3>
+                <p><strong>A.</strong> Nucleo ボード上のジャンパピン（CN2: ST-LINK TX/RX）が外れていないか確認してください。また、低電力スリープ（STOP/Standby）中はデバッガが切断されるため、<strong>[USER RESET] ボタンを押しながら書き込み（Connect Under Reset）</strong> を実行してください。</p>
+            </div>
+
+            <div class="card">
+                <h3>Q. I2C センサが <code>HAL_ERR_TIMEOUT</code> になります</h3>
+                <p><strong>A.</strong> I2C バス（PB8/PB9）に <strong>4.7kΩ のプルアップ抵抗</strong> が接続されているかテスターで確認してください。</p>
+            </div>
+
+            <div class="card">
+                <h3>Q. mTLS 証明書を変更したいときは？</h3>
+                <p><strong>A.</strong> <code>tools/certs/generate_certs.ps1 -DeviceId "DEV-STM32-002"</code> を再実行すると、<code>device_certs.h</code> が自動更新されます。その後 <code>ninja -C build</code> で再ビルドしてください。</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                darkMode: true,
+                background: '#132240',
+                primaryColor: '#0284c7',
+                primaryTextColor: '#ffffff',
+                lineColor: '#38bdf8'
+            }
+        });
+    </script>
+</body>
+</html>
