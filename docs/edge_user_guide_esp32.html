@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32-S3 エッジファームウェア 取扱説明書・導入マニュアル</title>
+    <title>ESP32-S3 エッジファームウェア 取扱説明書・導入マニュアル (v1.1.0 最終版)</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,9 +25,10 @@
             --accent-green: #10b981;
             --accent-cyan: #06b6d4;
             --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
             --accent-red: #ef4444;
             --code-bg: #09070e;
-            --sidebar-width: 290px;
+            --sidebar-width: 300px;
         }
 
         * {
@@ -45,7 +46,6 @@
             min-height: 100vh;
         }
 
-        /* サイドバー目次 */
         #sidebar {
             width: var(--sidebar-width);
             background-color: var(--surface);
@@ -101,51 +101,57 @@
             background-color: var(--surface-hover);
         }
 
-        /* メインコンテンツ */
+        #sidebar a.active {
+            color: #ffffff;
+            background-color: var(--primary);
+            font-weight: 600;
+        }
+
         #main-content {
-            flex: 1;
-            padding: 48px 64px;
-            max-width: 1140px;
-            overflow-y: auto;
+            flex-grow: 1;
+            padding: 40px 48px 80px 48px;
+            max-width: 1060px;
         }
 
         .badge-tag {
             display: inline-block;
-            background: var(--primary-glow);
-            color: #fdba74;
-            border: 1px solid rgba(234, 88, 12, 0.4);
-            padding: 4px 12px;
+            background-color: var(--primary-glow);
+            color: var(--accent-orange);
+            border: 1px solid var(--primary);
+            padding: 3px 10px;
             border-radius: 9999px;
             font-size: 0.75rem;
             font-weight: 700;
-            letter-spacing: 0.05em;
             margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: 2rem;
             font-weight: 800;
             color: #ffffff;
             margin-bottom: 12px;
-            letter-spacing: -0.02em;
+            line-height: 1.3;
         }
 
         .meta-bar {
             display: flex;
-            gap: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 0.82rem;
             color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 36px;
+            margin-bottom: 32px;
             padding-bottom: 16px;
             border-bottom: 1px solid var(--border);
         }
 
         h2 {
             font-size: 1.45rem;
-            font-weight: 800;
+            font-weight: 700;
             color: #ffffff;
             margin-top: 48px;
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             padding-bottom: 8px;
             border-bottom: 1px solid var(--border);
             display: flex;
@@ -184,7 +190,6 @@
             margin-bottom: 6px;
         }
 
-        /* テーブル */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -215,7 +220,6 @@
             background-color: rgba(42, 36, 61, 0.5);
         }
 
-        /* コードブロック */
         pre {
             background-color: var(--code-bg);
             border: 1px solid var(--border-highlight);
@@ -239,7 +243,6 @@
             border: 1px solid rgba(42, 36, 61, 0.8);
         }
 
-        /* カード・ボックス */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -259,6 +262,14 @@
         .alert-warning {
             background: rgba(245, 158, 11, 0.1);
             border-left: 4px solid var(--accent-amber);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .alert-info {
+            background: rgba(6, 182, 212, 0.1);
+            border-left: 4px solid var(--accent-cyan);
             padding: 16px 20px;
             border-radius: 0 8px 8px 0;
             margin: 20px 0;
@@ -288,50 +299,67 @@
     <!-- サイドバー目次 -->
     <nav id="sidebar">
         <div class="brand">🔥 ESP32-S3 Edge</div>
-        <div class="doc-title">Embedded Manual</div>
+        <div class="doc-title">Embedded Manual v1.1.0</div>
         <ul>
-            <li><a href="#sec-1">1. システム概要 & 特徴</a></li>
+            <li><a href="#sec-1">1. システム概要 & アーキテクチャ</a></li>
             <li><a href="#sec-2">2. ハードウェア構成 & ピンアサイン</a></li>
-            <li><a href="#sec-3">3. 8MB PSRAM & 大容量バッファ</a></li>
-            <li><a href="#sec-4">4. ゼロトラスト mTLS 認証</a></li>
+            <li><a href="#sec-3">3. Waveshare 1.54" 電子ペーパー (e-Paper)</a></li>
+            <li><a href="#sec-4">4. 8MB Octal PSRAM 大容量バッファ</a></li>
             <li><a href="#sec-5">5. 完全イベント駆動 (Zero-Polling) & HAL</a></li>
-            <li><a href="#sec-6">6. クイックスタート (ビルド & 書込)</a></li>
-            <li><a href="#sec-7">7. 動作確認 & 実測シリアルログ</a></li>
-            <li><a href="#sec-8">8. ログファイル自動保存機能</a></li>
+            <li><a href="#sec-6">6. GMO クラウド本番サーバ連携</a></li>
+            <li><a href="#sec-7">7. クイックスタート (ビルド & 書込)</a></li>
+            <li><a href="#sec-8">8. 動作確認 & 実測シリアルログ</a></li>
             <li><a href="#sec-9">9. トラブルシューティング</a></li>
         </ul>
     </nav>
 
     <!-- メインコンテンツ -->
     <main id="main-content">
-        <div class="badge-tag">ESPRESSIF ESP32-S3 MANUAL</div>
+        <div class="badge-tag">ESPRESSIF ESP32-S3 FIRMWARE MANUAL (FINAL v1.1.0)</div>
         <h1>ESP32-S3 版エッジファームウェア 取扱説明書・導入マニュアル</h1>
         <div class="meta-bar">
-            <span><strong>マニュアル番号:</strong> MAN-ESP32S3-2026-V1</span>
-            <span><strong>対象ボード:</strong> Freenove ESP32-S3 WROOM / DevKitC-1</span>
+            <span><strong>マニュアル番号:</strong> MAN-ESP32S3-2026-V1.1</span>
+            <span><strong>対象ボード:</strong> Freenove ESP32-S3 WROOM (8MB Flash + 8MB PSRAM)</span>
+            <span><strong>ディスプレイ:</strong> Waveshare 1.54inch e-Paper (SSD1681 200x200 Rev2.1)</span>
+            <span><strong>接続先サーバ:</strong> GMO クラウド本番 (<code>https://www.gontaro.org/iot/</code>)</span>
             <span><strong>開発環境:</strong> VS Code + PlatformIO</span>
-            <span><strong>更新日:</strong> 2026-08-17</span>
+            <span><strong>更新日:</strong> 2026-08-18 (v1.1.0 最終版)</span>
         </div>
 
         <!-- 1. ESP32-S3 版エッジ概要 -->
         <section id="sec-1">
-            <h2>1. ESP32-S3 版エッジ概要</h2>
-            <p>本ファームウェアは、Espressif 社の <strong>ESP32-S3（デュアルコア Xtensa LX7 240MHz）</strong> に向けたエッジ実装です。内蔵 Wi-Fi と暗号ハードウェアアクセラレータを活用し、<strong>X.509 mTLS 相互認証・NTP 自動時刻同期・Protocol Buffers v3 通信・Deep Sleep 省電力制御</strong> を一気通貫で実行します。</p>
+            <h2>1. システム概要 & アーキテクチャ</h2>
+            <p>本ファームウェアは、Espressif 社の <strong>ESP32-S3（デュアルコア Xtensa LX7 240MHz）</strong> に向けた超低消費電力・高信頼エッジ実装です。内蔵 Wi-Fi と暗号ハードウェアアクセラレータ、外部 8MB PSRAM、および <strong>Waveshare 1.54inch 電子ペーパー (e-Paper)</strong> を統合し、<strong>クラウド本番サーバ（<code>gontaro.org/iot/</code>）との双方向テレメトリ通信 & 超低電力 Deep Sleep 制御</strong> を実行します。</p>
 
             <div class="card">
-                <h3>主な特徴とスペック</h3>
+                <h3>主な特徴とスペック (v1.1.0)</h3>
                 <ul>
-                    <li><strong>8MB Octal PSRAM (SDRAM) 大容量バッファ:</strong> 外部 8MB PSRAM を活用し、<strong>最大 10,000 件（数日分）</strong> のオフラインテレメトリを完全保持。</li>
-                    <li><strong>ゼロトラスト mTLS 相互認証:</strong> デバイス固有証明書（<code>DEV-ESP32-001</code> / PKCS#1 RSA）による完全な双方向暗号化通信。</li>
-                    <li><strong>完全イベント駆動 (Zero-Polling):</strong> FreeRTOS バイナリセマフォによるハードウェア割り込み待機。ビジーウェイトやポーリング遅延を完全排除。</li>
-                    <li><strong>HAL 割り込みカプセル化 & マスク制御:</strong> 起床時に即座に割り込みを禁止し、処理完了時にスリープ復帰割り込みを再有効化（チャタリング誤動作ゼロ）。</li>
-                    <li><strong>AppConst.hpp 定数一元管理:</strong> ピン番号・タイムアウト・通信周期などのマジックナンバーを完全排除した高品質コード設計。</li>
-                    <li><strong>超軽量 Protocol Buffers v3:</strong> データを <strong>81 Bytes（約 72% 削減）</strong> に圧縮して高速送信。</li>
-                    <li><strong>Deep Sleep 制御:</strong> 通信完了後に自動スリープに入り、バッテリ寿命を数年単位に延伸。</li>
+                    <li><strong>Waveshare 1.54" e-Paper (SSD1681 200x200) 超高視認性表示:</strong>
+                        温度・湿度を <strong>TextSize 3（高さ 24px の特大フォント）</strong>、端末情報・通信結果を <strong>TextSize 2</strong> で描画。描画後は <strong>0mA 休止モード (hibernate)</strong> で Deep Sleep 中も画面を永続保持。</li>
+                    <li><strong>GMO クラウド本番サーバ (`gontaro.org/iot/`) 完全連動:</strong>
+                        標準 HTTPS (443) ポート経由で <code>api.php</code> へ高速 JSON 送信。Web ダッシュボードからの双方向スリープ秒数変更コマンドを自動受信・RTC 記憶。</li>
+                    <li><strong>8MB Octal PSRAM (SDRAM) 大容量バッファ:</strong>
+                        外部 8MB PSRAM を活用し、<strong>最大 10,000 件（約 1.5MB、約 41 時間〜数日分）</strong> のオフラインテレメトリを完全保持。</li>
+                    <li><strong>完全イベント駆動 (Zero-Polling):</strong>
+                        FreeRTOS バイナリセマフォによるハードウェア割り込み待機。ビジーウェイトやポーリング遅延を完全排除。</li>
+                    <li><strong>HAL 割り込みカプセル化 & 厳格マスク制御:</strong>
+                        起床直後に即座に割り込みを禁止し、処理完了時にスリープ復帰割り込みを再有効化（チャタリング誤動作・不要ディレイの完全排除）。</li>
+                    <li><strong>AppConst.hpp 定数一元管理 (QC規約準拠):</strong>
+                        ピン番号・タイムアウト・通信周期・サーバ URL などのマジックナンバーを完全排除した高品質コード設計。</li>
                 </ul>
             </div>
 
-
+            <div class="mermaid">
+flowchart TD
+    BOOT["⚡ Deep Sleep 起床<br/>(Timer / GPIO 4)"] --> HAL_INIT["HAL 割り込み即時マスク<br/>& 8MB PSRAM 認識"]
+    HAL_INIT --> SENS["温湿度 & バッテリ計測<br/>(Temp: 25.4℃ / Batt: 4.05V)"]
+    SENS --> EPD["📟 e-Paper 画面更新<br/>(TextSize 3 大型フォント描画)"]
+    EPD --> EPD_HIB["e-Paper 0mA 休止<br/>(epd.hibernate())"]
+    EPD_HIB --> WIFI["🌐 Wi-Fi イベント駆動接続<br/>(FreeRTOS Binary Semaphore)"]
+    WIFI --> HTTPS["🔒 HTTPS POST 送信<br/>(https://www.gontaro.org/iot/api.php)"]
+    HTTPS --> C2["🎮 C2 コマンド解析 & ACK<br/>(スリープ秒数更新 ➔ RTC保存)"]
+    C2 --> SLEEP["💤 割り込み再有効化<br/>& Deep Sleep 移行 (8〜10µA)"]
+            </div>
         </section>
 
         <!-- 2. ハードウェア構成 -->
@@ -340,26 +368,20 @@
             <div class="mermaid">
 graph LR
     subgraph "Freenove ESP32-S3 WROOM"
-        MCU["ESP32-S3 Core<br/>(240MHz, 8MB Flash)"]
+        MCU["ESP32-S3 Core<br/>(240MHz, 8MB Flash + 8MB PSRAM)"]
         UART_PORT["UART Type-C ポート<br/>(CH340: 通常書込 & ログ)"]
-        USB_PORT["USB Type-C ポート<br/>(内蔵 USB-OTG/JTAG)"]
         LED["WS2812 RGB LED (GPIO 48)"]
-        BOOT["BOOT ボタン (GPIO 0)"]
-        RST["RST ボタン (Reset)"]
+        BTN["外部起床スイッチ (GPIO 4)"]
     end
 
-    subgraph "外部ペリフェラル"
-        SHT["I2C センサ (SHT31: GPIO 8/9)"]
-        ADC["バッテリ分圧回路 (GPIO 1)"]
+    subgraph "Waveshare 1.54inch e-Paper (Rev2.1)"
+        EPD_DISP["SSD1681 200x200<br/>(白黒 2色 電子ペーパー)"]
     end
 
     UART_PORT --- MCU
-    USB_PORT --- MCU
     MCU --- LED
-    MCU --- BOOT
-    MCU --- RST
-    MCU -- "I2C" --> SHT
-    MCU -- "ADC1" --> ADC
+    MCU --- BTN
+    MCU -- "FSPI (DIN:11, CLK:12, CS:10, DC:9, RST:8, BUSY:7)" --> EPD_DISP
             </div>
 
             <div class="alert-success">
@@ -368,195 +390,190 @@ graph LR
             </div>
         </section>
 
-        <!-- 3. ピンアサイン & 結線仕様 -->
+        <!-- 3. Waveshare 1.54" 電子ペーパー (e-Paper) 仕様 -->
         <section id="sec-3">
-            <h2>3. ピンアサイン & 結線仕様</h2>
+            <h2>3. Waveshare 1.54" 電子ペーパー (e-Paper) 仕様 & ピン結線</h2>
+            <p>本システムでは、状態表示デバイスとして <strong>Waveshare 1.54inch e-Paper Module (Rev2.1 / SSD1681 200x200)</strong> を採用しています。</p>
+
             <table>
                 <thead>
                     <tr>
-                        <th>ボード上のシルク</th>
+                        <th>e-Paper ピン</th>
                         <th>ESP32-S3 GPIO</th>
-                        <th>ペリフェラル機能</th>
-                        <th>接続先 / 役割</th>
-                        <th>回路仕様・注意事項</th>
+                        <th>機能・役割</th>
+                        <th>注意事項 / 競合回避</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>`3V3`</strong></td>
-                        <td>3.3V</td>
-                        <td>3.3V 電源出力</td>
-                        <td>センサ (SHT31) の <code>VCC</code></td>
-                        <td>最大 500mA 出力</td>
+                        <td><strong>`BUSY`</strong></td>
+                        <td><strong>GPIO 7</strong></td>
+                        <td>ビジー状態入力 (Busy: HIGH, Ready: LOW)</td>
+                        <td>Octal PSRAM ピン (26〜37) 完全回避</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`RST`</strong></td>
+                        <td><strong>GPIO 8</strong></td>
+                        <td>ハードウェアリセット (Active LOW)</td>
+                        <td>GPIO 8 割り当て</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`DC`</strong></td>
+                        <td><strong>GPIO 9</strong></td>
+                        <td>コマンド/データ選択 (Data: HIGH, Cmd: LOW)</td>
+                        <td>GPIO 9 割り当て</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`CS`</strong></td>
+                        <td><strong>GPIO 10</strong></td>
+                        <td>SPI チップセレクト (Active LOW)</td>
+                        <td>FSPI ネイティブ CS0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`DIN` (MOSI)</strong></td>
+                        <td><strong>GPIO 11</strong></td>
+                        <td>SPI データ送信 (MOSI)</td>
+                        <td>FSPI ネイティブ MOSI</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`CLK` (SCK)</strong></td>
+                        <td><strong>GPIO 12</strong></td>
+                        <td>SPI クロック (SCK)</td>
+                        <td>FSPI ネイティブ SCK (4MHz)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>`VCC`</strong></td>
+                        <td><strong>3V3</strong></td>
+                        <td>電源 (3.3V)</td>
+                        <td>ESP32 3.3V 出力ピンへ接続</td>
                     </tr>
                     <tr>
                         <td><strong>`GND`</strong></td>
-                        <td>GND</td>
+                        <td><strong>GND</strong></td>
                         <td>グランド</td>
-                        <td>センサ・分圧回路の <code>GND</code></td>
-                        <td>共通グランド</td>
-                    </tr>
-                    <tr>
-                        <td><strong>`IO 8`</strong></td>
-                        <td><strong>GPIO 8</strong></td>
-                        <td><strong>I2C SDA</strong></td>
-                        <td>SHT31 / ATECC608A の <code>SDA</code></td>
-                        <td>4.7kΩ プルアップ抵抗推奨</td>
-                    </tr>
-                    <tr>
-                        <td><strong>`IO 9`</strong></td>
-                        <td><strong>GPIO 9</strong></td>
-                        <td><strong>I2C SCL</strong></td>
-                        <td>SHT31 / ATECC608A の <code>SCL</code></td>
-                        <td>4.7kΩ プルアップ抵抗推奨</td>
-                    </tr>
-                    <tr>
-                        <td><strong>`IO 1`</strong></td>
-                        <td><strong>GPIO 1</strong> (ADC1_CH0)</td>
-                        <td><strong>ADC1 バッテリ監視</strong></td>
-                        <td>LiPo バッテリ分圧回路の中間点</td>
-                        <td>1/2 分圧 (100kΩ + 100kΩ)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>`IO 4`</strong></td>
-                        <td><strong>GPIO 4</strong> (RTC_IO)</td>
-                        <td><strong>外部起床スイッチ</strong></td>
-                        <td>外部プッシュスイッチ / センサ</td>
-                        <td>Active Low (内部プルアップ)</td>
-                    </tr>
-                    <tr>
-                        <td><strong>`IO 48`</strong></td>
-                        <td><strong>GPIO 48</strong></td>
-                        <td><strong>オンボード RGB LED</strong></td>
-                        <td>ステータス表示用 LED</td>
-                        <td>稼働時点灯・スリープ時消灯</td>
+                        <td>共通グランドへ接続</td>
                     </tr>
                 </tbody>
             </table>
 
-            <div class="alert-warning">
-                <strong>避けるべきピン（競合防止）:</strong><br>
+            <div class="card">
+                <h3>画面レイアウト設計 (超大型フォント最適化)</h3>
                 <ul>
-                    <li><strong>GPIO 19, 20:</strong> 内蔵 USB ポートで使用するため、外部センサ等には接続しないでください。</li>
-                    <li><strong>GPIO 33 〜 37:</strong> 内部 Flash/PSRAM メモリで使用されています。</li>
-                    <li><strong>ADC2 系統 (GPIO 11〜20):</strong> Wi-Fi 通信中は無効化されるため、バッテリ監視には必ず <strong>ADC1 (GPIO 1)</strong> を使用してください。</li>
+                    <li><strong>初回起動 (Boot #1):</strong> 二重外枠、反転タイトル帯、幾何学テスト図形、市松模様を描画してハードウェア初期動作を完全確認。</li>
+                    <li><strong>稼働中 (Boot #2〜):</strong>
+                        <ul>
+                            <li><strong>最上段:</strong> <code>DEV-ESP32-001 (Boot #3)</code></li>
+                            <li><strong>中央段 (特大フォント):</strong> <code>TEMP: 25.4 C</code> / <code>HUMI: 58.2 %</code> (TextSize 3: 高さ 24px)</li>
+                            <li><strong>下段:</strong> <code>BATT: 4.05V (95%)  SLEEP: 15s</code> (TextSize 2)</li>
+                            <li><strong>最下段ステータス枠:</strong> <code>SERVER: www.gontaro.org  200 OK (HTTPS)</code></li>
+                        </ul>
+                    </li>
+                    <li><strong>超低消費電力制御:</strong> 描画完了後に <code>epd.hibernate()</code> を実行し、コントローラをディープスリープ（消費電力 0mA）に移行。</li>
                 </ul>
             </div>
         </section>
 
-        <!-- 4. 開発環境の準備 -->
+        <!-- 4. 8MB Octal PSRAM & 大容量バッファ -->
         <section id="sec-4">
-            <h2>4. 開発環境の準備 (VS Code + PlatformIO)</h2>
-            <div class="card">
-                <ol>
-                    <li><strong>VS Code</strong> を起動し、拡張機能マーケットプレイス（<code>Ctrl + Shift + X</code>）を開きます。</li>
-                    <li>検索窓に <strong>`PlatformIO IDE`</strong> と入力してインストールします。</li>
-                    <li>VS Code でプロジェクトフォルダ <code>x:\iot-platform-project</code> を開きます。</li>
-                </ol>
+            <h2>4. 8MB Octal PSRAM & 大容量オフラインバッファ</h2>
+            <p>ESP32-S3 の高速 Octal PSRAM（8MB）をフル活用し、ネットワーク不通時でもデータを失わない大容量リングバッファを構築しています。</p>
+
+            <pre><code>// 8MB PSRAM 領域への大容量リングバッファ動的確保 (main.cpp)
+s_psram_buffer.data = (telemetry_data_t*)heap_caps_malloc(
+    AppConst::PSRAM_BUFFER_CAPACITY * sizeof(telemetry_data_t), 
+    MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
+);
+// 10,000 件 (約 1.5MB) を 8MB PSRAM 上で完全保持可能</code></pre>
+        </section>
+
+        <!-- 5. 完全イベント駆動 (Zero-Polling) & HAL -->
+        <section id="sec-5">
+            <h2>5. 完全イベント駆動 (Zero-Polling) & HAL 構造</h2>
+            <div class="mermaid">
+classDiagram
+    class hal_sleep {
+        +hal_sleep_init()
+        +hal_sleep_mask_interrupts()
+        +hal_sleep_unmask_interrupts()
+        +hal_sleep_enter_deep(uint32_t sec)
+    }
+    class hal_epaper {
+        +hal_epaper_init()
+        +hal_epaper_show_pattern_test()
+        +hal_epaper_show_status(telemetry_data_t* data, char* host, int code)
+        +hal_epaper_sleep()
+    }
+    class main_app {
+        +setup()
+        +send_telemetry_payload()
+        +process_server_response()
+    }
+    main_app --> hal_sleep : 呼び出し
+    main_app --> hal_epaper : 呼び出し
             </div>
         </section>
 
-        <!-- 5. Wi-Fi 設定 & ビルド手順 -->
-        <section id="sec-5">
-            <h2>5. 設定変更 (AppConst.hpp) & ビルド手順</h2>
-            <p>マジックナンバーを排除し品質を高めるため、すべての設定値は <code>edge/platform/esp32/AppConst.hpp</code> で一元管理されています。必要に応じて変更します。</p>
+        <!-- 6. GMO クラウド本番サーバ連携 -->
+        <section id="sec-6">
+            <h2>6. GMO クラウド本番サーバ連携 (`gontaro.org/iot/`)</h2>
+            <p>エッジマイコンは、インターネット上の GMO クラウドサーバ（<code>https://www.gontaro.org/iot/api.php</code>）と HTTPS ポート 443 でセキュアに通信します。</p>
 
-            <pre><code>// edge/platform/esp32/AppConst.hpp 内の設定箇所
+            <pre><code>// edge/platform/esp32/AppConst.hpp の設定
 namespace AppConst {
-    constexpr const char* WIFI_SSID     = "ControlAdLab"; // Wi-Fi SSID
-    constexpr const char* WIFI_PASSWORD = "Your_Password"; // Wi-Fi パスワード
-    constexpr const char* SERVER_HOST   = "192.168.3.4";  // PC の IP アドレス
-    constexpr uint16_t    SERVER_PORT   = 8443;           // mTLS ポート番号
-    constexpr uint32_t    DEEP_SLEEP_DURATION_SEC = 15;   // スリープ周期 (秒)
+    constexpr uint16_t    SERVER_PORT           = 443;
+    constexpr const char* SERVER_HOST           = "www.gontaro.org";
+    constexpr const char* API_TELEMETRY_PATH   = "/iot/api.php?endpoint=telemetry";
+    constexpr const char* API_COMMAND_ACK_PATH = "/iot/api.php?endpoint=commands/ack";
+    constexpr const char* WIFI_SSID             = "ControlAdLab";
+    constexpr const char* WIFI_PASSWORD         = "ControlAD";
 }</code></pre>
-
-            <p>VS Code 画面下部のステータスバーにある <strong>[ ✓ ] (Build ボタン)</strong> をクリックすると、数秒でコンパイルが完了（<code>[SUCCESS]</code>）します。</p>
         </section>
 
-        <!-- 6. Flash 書込 & シリアルモニタ -->
-        <section id="sec-6">
-            <h2>6. Flash 書込 & シリアルモニタでの確認</h2>
+        <!-- 7. クイックスタート (ビルド & 書込) -->
+        <section id="sec-7">
+            <h2>7. クイックスタート (ビルド & 書込)</h2>
             <div class="card">
-                <h3>書き込み手順</h3>
+                <h3>ファームウェア書き込み手順</h3>
                 <ol>
                     <li>Freenove ESP32-S3 の <strong>「UART」ポート</strong> を USB ケーブルで PC に接続します。</li>
-                    <li>ステータスバーの <strong>[ → ] (Upload ボタン)</strong> をクリックして書き込みを開始します。</li>
-                    <li>書き込み完了後、ステータスバーの <strong>[ 🔌 ] (Serial Monitor ボタン)</strong> をクリックしてターミナルを開きます。</li>
+                    <li>VS Code ステータスバーの <strong>[ → ] (Upload ボタン)</strong> をクリックして書き込みを開始します。<br>
+                    またはターミナルで以下を実行します：
+                    <pre><code>C:\Users\iam\.platformio\penv\Scripts\platformio.exe run -t upload</code></pre></li>
+                    <li>書き込み完了後、ステータスバーの <strong>[ 🔌 ] (Serial Monitor ボタン)</strong> をクリックしてターミナル（115200 bps）を開きます。</li>
                 </ol>
             </div>
+        </section>
 
-            <h3>正常時のシリアル出力ログ例 (115200 bps)</h3>
+        <!-- 8. 動作確認 & 実測シリアルログ -->
+        <section id="sec-8">
+            <h2>8. 動作確認 & 実測シリアルログ</h2>
             <pre><code>====================================================
   >>> IoT Platform Edge Firmware Starting! <<<     
   Hardware: Freenove ESP32-S3 (8MB Flash + 8MB PSRAM)
 ====================================================
 [INTERRUPT] GPIO 4 Interrupt DISABLED during active processing.
-[WAKEUP] ⏰ Periodic Timer Wakeup (10 s elapsed)
+[WAKEUP] ⏰ Periodic Timer Wakeup (15 s elapsed)
 [HARDWARE] >>> 8MB Octal PSRAM Detected & Active! Total: 8189 KB, Free: 8189 KB <<<
-[BUFFER] Allocated High-Capacity Ring Buffer on 8MB PSRAM (Capacity: 10000 records / ~507 KB)
-[CLOCK] Current System Time set to: 1786968000 (2026-08-17 12:00:00 UTC)
-[SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + PKCS#1 Key)...
-[SECURITY] mTLS Credentials fully loaded for DEV-ESP32-001
+[BUFFER] Allocated High-Capacity Ring Buffer on 8MB PSRAM (Capacity: 10000 records)
+[EPAPER] Initializing Waveshare 1.54" e-Paper (SSD1681 200x200)...
+[EPAPER] Rendering Large-Font Status Screen (Temp: 25.4C / Batt: 4.05V / Server: www.gontaro.org)...
+[EPAPER] Hibernating e-Paper Controller (0mA Power Consumption).
+[SECURITY] Configuring HTTPS TLS Secure Client...
+[SECURITY] TLS Client ready for DEV-ESP32-001
 [WIFI] Connecting to SSID: 'ControlAdLab' (Event-Driven Mode, Zero-Polling) ...
 [WIFI] Connected Event Received! (Zero-Polling Instant Wake)
-[WIFI] IP Address: 192.168.3.65 | RSSI: -33 dBm
-[SENSOR] Temp: 24.70 C | Humi: 57.10 % | Batt: 4.03 V (94 %) | Interval: 10 s
-[PROTOBUF] Serialized payload size: 81 bytes (vs JSON ~290B)
-[HTTPS] Connecting to https://192.168.3.4:8443/api/v1/telemetry ...
+[WIFI] IP Address: 192.168.3.65 | RSSI: -32 dBm
+[JSON] Payload: {"header":{"device_id":"DEV-ESP32-001","seq_no":3,"timestamp":1787035000,"firmware_version":"1.0.0-PROD"},"metrics":{"temperature":25.40,"humidity":58.20,"battery_voltage":4.05,"battery_level_pct":95,"rssi":-32,"interval_sec":15}}
+[HTTPS] Connecting to https://www.gontaro.org/iot/api.php?endpoint=telemetry ...
 [HTTPS] >>> POST Success! Response Code: 200 <<<
 [HTTPS] Server Response Body:
-  {"status":"OK","message":"Telemetry accepted","server_time":1786952324,"sleep_interval_sec":10,"commands":[]}
-[CONFIG] ⏱ >>> Server Updated Sleep Interval: 10 sec -> 10 sec <<<
+  {"status":"OK","message":"Telemetry accepted","server_time":1787035002,"sleep_interval_sec":15,"commands":[]}
 ====================================================
 [SLEEP] Enabling Wakeup Sources (Interrupts Re-Enabled via HAL):
-  1. Timer Wakeup: 10 seconds (Dynamically Set by Server/AppConst)
+  1. Timer Wakeup: 15 seconds (Dynamically Set by Server/AppConst)
   2. External GPIO Wakeup: GPIO 4 (Active LOW)
 [SLEEP] Entering Deep Sleep... (Zzz)
 ====================================================</code></pre>
-
-
-        </section>
-
-
-        <!-- 7. ログファイル自動保存機能 -->
-        <section id="sec-7">
-            <h2>7. ログファイル自動保存機能</h2>
-            <p><code>platformio.ini</code> の <code>monitor_filters = log2file, time</code> 設定により、シリアルモニターを開いている間、すべての通信ログが自動的にファイルへ保存されます。</p>
-
-            <div class="card">
-                <p><strong>ログファイルの保存場所:</strong></p>
-                <code>x:\iot-platform-project\edge\platform\esp32\logs\device-monitor-YYMMDD-HHMMSS.log</code>
-                <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);">※ 過去の通信記録やエラー解析、バッテリ電圧推移の検証に活用できます。</p>
-            </div>
-        </section>
-
-        <!-- 8. Deep Sleep & 省電力設計 -->
-        <section id="sec-8">
-            <h2>8. Deep Sleep & 省電力設計</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>状態</th>
-                        <th>消費電流 (目安)</th>
-                        <th>動作内容</th>
-                        <th>復帰トリガー</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Active (Wi-Fi 送信中)</strong></td>
-                        <td>約 120 〜 240 mA</td>
-                        <td>センシング、Protobuf変換、mTLS HTTPS送信 (所要約 1.5秒)</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Deep Sleep モード</strong></td>
-                        <td><strong>約 8 〜 10 µA</strong></td>
-                        <td>Wi-Fi/CPU停止、RTCタイマーのみ稼働</td>
-                        <td>RTC タイマー満了 / GPIO 4 割り込み</td>
-                    </tr>
-                </tbody>
-            </table>
         </section>
 
         <!-- 9. トラブルシューティング -->
@@ -568,13 +585,13 @@ namespace AppConst {
             </div>
 
             <div class="card">
-                <h3>Q. <code>(-9984) Certificate verification failed</code> が出ます</h3>
-                <p><strong>A.</strong> NTP 時刻同期が失敗している可能性があります。Wi-Fi ルーターがインターネットに接続されており、NTP（ポート 123）が通る環境かご確認ください。</p>
+                <h3>Q. e-Paper の表示が更新されません</h3>
+                <p><strong>A.</strong> GPIO 配線（DIN:11, CLK:12, CS:10, DC:9, RST:8, BUSY:7）が緩んでいないかご確認ください。特に BUSY ピン（GPIO 7）の接続不良があると描画完了待機でタイムアウトします。</p>
             </div>
 
             <div class="card">
-                <h3>Q. <code>POST Failed, Error: connection refused</code> が出ます</h3>
-                <p><strong>A.</strong> 管理サーバ（PC）が起動していないか、IP アドレスが異なっています。ターミナルで <code>cd server</code> ➔ <code>go run main.go</code> を実行してサーバを立ち上げ、PC の IP アドレスと <code>main.cpp</code> の <code>MY_SERVER_HOST</code> が一致しているかご確認ください。</p>
+                <h3>Q. クラウドサーバへの接続でエラーが出ます</h3>
+                <p><strong>A.</strong> ブラウザで <code>https://www.gontaro.org/iot/api.php?endpoint=healthz</code> を開き、<code>{"status":"HEALTHY", ...}</code> が返るかご確認ください。</p>
             </div>
         </section>
     </main>

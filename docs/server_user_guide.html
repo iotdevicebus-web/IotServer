@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT管理サーバ 取扱説明書・操作マニュアル</title>
+    <title>IoT管理サーバ 取扱説明書・操作マニュアル (v1.1.0 最終版)</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #2563eb;
@@ -18,7 +18,9 @@
             --bg-gray: #f8fafc;
             --white: #ffffff;
             --green: #10b981;
+            --cyan: #06b6d4;
             --amber: #f59e0b;
+            --purple: #8b5cf6;
             --red: #ef4444;
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
@@ -37,7 +39,6 @@
             padding-bottom: 80px;
         }
 
-        /* ヘッダーナビゲーション */
         header {
             background-color: var(--white);
             border-bottom: 1px solid var(--border);
@@ -69,37 +70,36 @@
             border-radius: 9999px;
         }
 
-        /* コンテナ */
         .container {
-            max-width: 960px;
+            max-width: 1000px;
             margin: 40px auto;
             padding: 0 24px;
         }
 
-        /* ヒーローセクション */
         .hero {
-            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            background: linear-gradient(135deg, #1e293b, #0f172a);
             color: white;
             padding: 48px 40px;
             border-radius: 16px;
             box-shadow: var(--shadow);
             margin-bottom: 40px;
+            border: 1px solid #334155;
         }
 
         .hero h1 {
-            font-size: 2rem;
+            font-size: 2.1rem;
             font-weight: 800;
             margin-bottom: 16px;
             letter-spacing: -0.02em;
+            color: #f8fafc;
         }
 
         .hero p {
             font-size: 1.05rem;
-            opacity: 0.95;
-            max-width: 700px;
+            color: #94a3b8;
+            max-width: 760px;
         }
 
-        /* 目次カード */
         .toc-card {
             background: var(--white);
             border: 1px solid var(--border);
@@ -113,14 +113,11 @@
             font-size: 1.1rem;
             margin-bottom: 16px;
             color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .toc-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 12px;
         }
 
@@ -131,7 +128,7 @@
             color: var(--primary);
             text-decoration: none;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             padding: 8px 12px;
             border-radius: 6px;
             transition: all 0.2s;
@@ -141,7 +138,6 @@
             background-color: var(--primary-light);
         }
 
-        /* セクション共通 */
         section {
             background: var(--white);
             border: 1px solid var(--border);
@@ -170,15 +166,22 @@
             margin: 24px 0 12px 0;
         }
 
-        p {
+        p, ul, ol {
             margin-bottom: 16px;
             color: #334155;
         }
 
-        /* 機能カード */
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin: 24px 0;
         }
@@ -188,7 +191,6 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 24px;
-            text-align: left;
         }
 
         .feature-icon {
@@ -196,74 +198,6 @@
             margin-bottom: 12px;
         }
 
-        .feature-card h4 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-dark);
-        }
-
-        .feature-card p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0;
-        }
-
-        /* ステップボックス */
-        .step-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin: 24px 0;
-        }
-
-        .step-item {
-            display: flex;
-            gap: 20px;
-            align-items: flex-start;
-        }
-
-        .step-number {
-            background-color: var(--primary);
-            color: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            flex-shrink: 0;
-            margin-top: 4px;
-        }
-
-        .step-content {
-            background: var(--bg-gray);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px 24px;
-            flex: 1;
-        }
-
-        .step-content h4 {
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-
-        /* コマンド・コード表示 */
-        .code-box {
-            background-color: #0f172a;
-            color: #38bdf8;
-            padding: 14px 18px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 0.95rem;
-            margin: 12px 0;
-            overflow-x: auto;
-        }
-
-        /* テーブル */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -271,10 +205,10 @@
         }
 
         th, td {
-            padding: 14px 16px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
             text-align: left;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         th {
@@ -283,339 +217,215 @@
             color: var(--text-muted);
         }
 
-        /* バッジ */
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 9999px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-        .badge-green { background-color: #d1fae5; color: #065f46; }
-        .badge-red { background-color: #fee2e2; color: #991b1b; }
-        .badge-amber { background-color: #fef3c7; color: #92400e; }
-
-        /* Q&A アコーディオン風カード */
-        .faq-item {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 16px;
-            background: var(--bg-gray);
+        pre {
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 16px 20px;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            overflow-x: auto;
+            margin: 16px 0;
         }
 
-        .faq-q {
-            font-weight: 700;
-            font-size: 1.05rem;
-            color: var(--primary);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        code {
+            font-family: 'Fira Code', monospace;
+            background: #e2e8f0;
+            color: #0f172a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
         }
 
-        .faq-a {
-            color: #334155;
-            font-size: 0.95rem;
-            line-height: 1.7;
+        .alert-success {
+            background: #ecfdf5;
+            border-left: 4px solid var(--green);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            color: #065f46;
         }
 
-        /* 印刷・PDF用 */
-        @media print {
-            body { background: white; padding: 0; }
-            header { display: none; }
-            section { box-shadow: none; border: 1px solid #ccc; page-break-inside: avoid; }
-            .hero { background: #2563eb; color: white; -webkit-print-color-adjust: exact; }
+        .alert-info {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+            color: #1e40af;
         }
     </style>
 </head>
 <body>
 
-    <!-- ヘッダー -->
     <header>
         <div class="header-title">
-            <span>⚡ IoT Platform</span>
-            <span class="header-tag">取扱説明書 (一般・運用者向け)</span>
+            <span>🌐</span>
+            <span>IoT Platform Server Manual</span>
         </div>
-        <div>
-            <a href="http://localhost:8080/" target="_blank" style="background: #2563eb; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 0.9rem; font-weight: 600;">🖥️ ダッシュボードを開く</a>
-        </div>
+        <span class="header-tag">v1.1.0 最終版</span>
     </header>
 
     <div class="container">
-        <!-- ヒーロー -->
+        <!-- ヒーローセクション -->
         <div class="hero">
-            <h1>IoT管理サーバ 取扱説明書</h1>
-            <p>本マニュアルでは、設置されたセンサー端末からのデータ確認方法、管理画面（ダッシュボード）の見方、異常時の通知の受け取り方、および遠隔操作手順をわかりやすく解説します。</p>
+            <h1>IoT管理サーバ 取扱説明書・運用マニュアル</h1>
+            <p>GMO クラウド本番サーバ（<code>gontaro.org/iot/</code>）による 24時間常時運用環境、および Go 言語製ローカル mTLS 高速サーバの操作・API・ダッシュボード運用マニュアルです。</p>
         </div>
 
-        <!-- 目次 -->
+        <!-- 目次カード -->
         <div class="toc-card">
-            <h3>📑 目次 (クリックで移動)</h3>
+            <h3>📑 目次 (Contents)</h3>
             <div class="toc-grid">
-                <a href="#sec-1" class="toc-link">📌 1. このシステムでできること</a>
-                <a href="#sec-2" class="toc-link">🚀 2. サーバの起動と接続方法</a>
-                <a href="#sec-3" class="toc-link">📊 3. 画面の見方 (ダッシュボード)</a>
-                <a href="#sec-4" class="toc-link">🔔 4. 異常アラート通知の仕組み</a>
-                <a href="#sec-5" class="toc-link">🎮 5. センサー端末の遠隔操作</a>
-                <a href="#sec-6" class="toc-link">❓ 6. よくある質問 (Q&A)</a>
+                <a href="#sec-1" class="toc-link">1. サーバ構成 & 運用形態</a>
+                <a href="#sec-2" class="toc-link">2. GMO クラウド本番 Web ダッシュボード</a>
+                <a href="#sec-3" class="toc-link">3. 双方向 C2 スリープ制御 & 永続化</a>
+                <a href="#sec-4" class="toc-link">4. REST API 仕様一覧</a>
+                <a href="#sec-5" class="toc-link">5. GMO サーバへのパッケージ配置手順</a>
+                <a href="#sec-6" class="toc-link">6. Go ローカル mTLS サーバの起動 & テスト</a>
             </div>
         </div>
 
-        <!-- 1. このシステムでできること -->
+        <!-- 1. サーバ構成 -->
         <section id="sec-1">
-            <h2>📌 1. このシステムでできること</h2>
-            <p>現場に設置されたマイコン（ESP32など）から届く温湿度やバッテリ状態を、自動で収集・蓄積・可視化する管理システムです。</p>
-            
+            <h2>1. サーバ構成 & 運用形態</h2>
+            <p>本プラットフォームは、用途に合わせて <strong>2系統のサーバ運用形態</strong> を備えています。</p>
+
             <div class="feature-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">📈</div>
-                    <h4>リアルタイム自動グラフ化</h4>
-                    <p>センサーから送られてくる温度・湿度・バッテリ電圧を、見やすい折れ線グラフで自動表示します。</p>
+                    <div class="feature-icon">☁️</div>
+                    <h4>GMO クラウド本番環境 (推奨)</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 8px;">
+                        <strong>URL:</strong> <code>https://www.gontaro.org/iot/</code><br>
+                        <strong>技術スタック:</strong> PHP 8.4 + SQLite WAL モード<br>
+                        <strong>特徴:</strong> 24時間常時稼働。PCを起動していなくても世界中からテレメトリをリアルタイム受信 & 監視可能。
+                    </p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🚨</div>
-                    <h4>異常の自動検知＆通知</h4>
-                    <p>35℃以上の高温やバッテリ残量低下などの異常を自動で見つけ、SlackやDiscordに即座に知らせます。</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🛡️</div>
-                    <h4>最高レベルのセキュリティ</h4>
-                    <p>登録された正規の端末だけが通信できる「ゼロトラスト暗号化」により、部外者による盗聴や不正アクセスを遮断します。</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">🔋</div>
-                    <h4>超省電力・データ欠損ゼロ</h4>
-                    <p>データを約81%圧縮して送信。もし電波が圏外になっても端末内に32件ためておき、復帰時にまとめて送信します。</p>
+                    <div class="feature-icon">⚡</div>
+                    <h4>Go ローカル mTLS サーバ</h4>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 8px;">
+                        <strong>URL:</strong> <code>https://192.168.3.4:8443</code><br>
+                        <strong>技術スタック:</strong> Go 1.22 + SQLite WAL + Protobuf<br>
+                        <strong>特徴:</strong> X.509 相互認証 (mTLS) によるゼロトラスト通信、高負荷ローカル開発・試験用。
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- 2. サーバの起動と接続方法 -->
+        <!-- 2. GMO クラウド本番 Web ダッシュボード -->
         <section id="sec-2">
-            <h2>🚀 2. サーバの起動と接続方法</h2>
-            <p>管理サーバはパソコン（またはクラウドサーバ）上で簡単に起動できます。</p>
+            <h2>2. GMO クラウド本番 Web ダッシュボード (`gontaro.org/iot/`)</h2>
+            <p>ブラウザで <strong><code>https://www.gontaro.org/iot/</code></strong> を開くと、以下のリアルタイム管理画面が利用できます。</p>
 
-            <div class="step-container">
-                <div class="step-item">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>管理サーバを起動する</h4>
-                        <p>ターミナル（PowerShell等）で以下のコマンドを実行します：</p>
-                        <div class="code-box">cd server<br>go run main.go</div>
-                        <p>※ 画面に <code>[DASHBOARD] Web UI Dashboard running at: http://localhost:8080/</code> と出たら起動完了です。</p>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>ブラウザで管理画面を開く</h4>
-                        <p>Google Chrome、Microsoft Edge などのブラウザを開き、アドレスバーに以下を入力します：</p>
-                        <div class="code-box">http://localhost:8080/</div>
-                        <p>※ 同じWi-Fi内の別PCやタブレットから見る場合は <code>http://[サーバのIPアドレス]:8080/</code> で開けます。</p>
-                    </div>
-                </div>
+            <div class="alert-success">
+                <strong>ダッシュボードの主要機能:</strong>
+                <ul>
+                    <li><strong>接続デバイス一覧:</strong> Device ID、ファームウェアバージョン、現在の起動間隔（⏱ 10秒/60秒）、稼働ステータス（ONLINE/OFFLINE）、累計パケット数を表示。</li>
+                    <li><strong>時系列テレメトリ推移グラフ:</strong> 温度（℃）、湿度（%）、バッテリ電圧（V）を Chart.js でリアルタイム描画。</li>
+                    <li><strong>サマリーカード:</strong> 接続デバイス総数、オンライン数、総受信パケット数、DBステータスを表示。</li>
+                </ul>
             </div>
         </section>
 
-        <!-- 3. 画面の見方 (ダッシュボード) -->
+        <!-- 3. 双方向 C2 スリープ制御 & 永続化 -->
         <section id="sec-3">
-            <h2>📊 3. 画面の見方 (ダッシュボード)</h2>
-            <p>ブラウザで <code>http://localhost:8080/</code> を開くと、以下のような管理画面が表示されます。</p>
+            <h2>3. 双方向 C2 スリープ制御 & 永続化</h2>
+            <p>画面上のリモートコマンドボタンにより、エッジマイコンのスリープ周期をクラウドから動的に切り替えることができます。</p>
 
-            <!-- 画面写真の埋め込み -->
-            <div style="margin: 24px 0; text-align: center;">
-                <img src="images/dashboard_screenshot.jpg" alt="IoT管理ダッシュボード画面" style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3); border: 1px solid var(--border);">
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">▲ IoT管理ダッシュボード画面 (リアルタイム折れ線グラフ・端末一覧・遠隔操作パネル)</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>⏱ スリープ10秒に変更</h4>
+                    <p style="font-size: 0.88rem; color: var(--text-muted);">高頻度モニタリングモード。10秒周期でセンシング・データ送信。</p>
+                </div>
+                <div class="feature-card">
+                    <h4>⏱ スリープ60秒に変更</h4>
+                    <p style="font-size: 0.88rem; color: var(--text-muted);">超低消費電力運用モード。バッテリ消費を最小化して長期稼働。</p>
+                </div>
             </div>
 
-            <h3>① リアルタイム時系列グラフ (画面上部)</h3>
-            <p>選択中の端末から送られてきた温度・湿度・バッテリ電圧が折れ線グラフでリアルタイムにプロットされます。</p>
-            <ul>
-                <li><strong>赤線 (温度):</strong> 測定された気温 (℃)</li>
-                <li><strong>青線 (湿度):</strong> 測定された湿度 (%)</li>
-                <li><strong>緑線 (バッテリ):</strong> バッテリ電圧 (V)</li>
-            </ul>
-
-            <h3>② 端末一覧テーブル (画面左下)</h3>
-            <p>登録されているすべてのセンサー端末の状態がひと目でわかります。</p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>項目</th>
-                        <th>表示例</th>
-                        <th>意味</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>デバイスID</strong></td>
-                        <td><code>DEV-ESP32-001</code></td>
-                        <td>端末固有の識別番号です。</td>
-                    </tr>
-                    <tr>
-                        <td><strong>ステータス</strong></td>
-                        <td><span class="badge badge-green">ONLINE</span></td>
-                        <td>正常に定期通信が行われている状態です。</td>
-                    </tr>
-                    <tr>
-                        <td><strong>ファームウェア</strong></td>
-                        <td><code>1.0.0-PSRAM</code></td>
-                        <td>端末内部のプログラムのバージョンです。</td>
-                    </tr>
-                    <tr>
-                        <td><strong>起動間隔</strong></td>
-                        <td><span style="color: #0284c7; font-weight: 700;">⏱ 10秒 / 60秒</span></td>
-                        <td>エッジ端末が現在設定されている定期測定・送信スリープ間隔です。</td>
-                    </tr>
-                    <tr>
-                        <td><strong>ステータス</strong></td>
-                        <td><span class="badge badge-green">ONLINE</span></td>
-                        <td>正常に定期通信が行われている状態です（送信待ちコマンドがある場合は <code>⏳ 送信待ち (1)</code> バッジが点灯）。</td>
-                    </tr>
-                    <tr>
-                        <td><strong>電波強度 (RSSI)</strong></td>
-                        <td><code>-32 dBm</code></td>
-                        <td>Wi-Fiの電波の強さです（-30〜-60が良好、-85以下は弱電波）。</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <h3>③ リモートコマンド操作パネル (画面左下)</h3>
-            <p>ボタンをクリックするだけで、遠隔地のセンサー端末に指示を送ることができます。コマンド発行後は <strong>「⏳ コマンド送信待ちです (X秒経過)」</strong> とリアルタイムにカウントアップされ、端末が次回起床して指示を適用した瞬間に <strong>「✅ 送信・適用完了 (所要時間: Y秒)」</strong> へと自動更新されます。</p>
+            <div class="alert-info">
+                <strong>送信待ちインジケータ & 適用通知:</strong><br>
+                ボタンを押すと即座に <strong>「⏳ コマンド送信待ちです (1秒経過... 2秒経過...)」</strong> とカウントアップを開始し、エッジが次回起床してコマンドを受信・適用した瞬間に <strong>「✅ コマンドがエッジデバイスに送信・適用されました (所要時間: X秒)」</strong> と通知されます。設定値はサーバの SQLite およびエッジの RTC Fast Memory に記憶され、恒久的に維持されます。
+            </div>
         </section>
 
-
-        <!-- 4. 異常アラート通知の仕組み -->
+        <!-- 4. REST API 仕様一覧 -->
         <section id="sec-4">
-            <h2>🔔 4. 異常アラート通知の仕組み</h2>
-            <p>本システムは、データを受信した瞬間に以下の基準で自動チェックを行います。異常を見つけた場合、自動的に警告ログを記録し、外部チャット（SlackやDiscord）へ通知を送ります。</p>
-
+            <h2>4. REST API 仕様一覧</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>アラート名</th>
-                        <th>判定基準</th>
-                        <th>危険度</th>
-                        <th>どんなときに出る？</th>
+                        <th>HTTP Method</th>
+                        <th>エンドポイント</th>
+                        <th>概要・用途</th>
+                        <th>レスポンス例</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong>高温アラート</strong></td>
-                        <td>温度が <strong>35.0 ℃</strong> を超えたとき</td>
-                        <td><span class="badge badge-red">CRITICAL (重大)</span></td>
-                        <td>真夏の猛暑、サーバ室のエアコン停止、機器の異常発熱時など。</td>
+                        <td><code>GET</code></td>
+                        <td><code>/iot/api.php?endpoint=healthz</code></td>
+                        <td>サーバヘルスチェック</td>
+                        <td><code>{"status":"HEALTHY","php_version":"8.4.20"}</code></td>
                     </tr>
                     <tr>
-                        <td><strong>低温・凍結注意</strong></td>
-                        <td>温度が <strong>0.0 ℃</strong> 未満になったとき</td>
-                        <td><span class="badge badge-amber">WARNING (警告)</span></td>
-                        <td>冬場の凍結リスクや低温障害の防止に。</td>
+                        <td><code>POST</code></td>
+                        <td><code>/iot/api.php?endpoint=telemetry</code></td>
+                        <td>テレメトリ電文の受信 & C2コマンド返却</td>
+                        <td><code>{"status":"OK","sleep_interval_sec":15,"commands":[]}</code></td>
                     </tr>
                     <tr>
-                        <td><strong>バッテリ残量低下</strong></td>
-                        <td>バッテリ残量が <strong>20 %</strong> を下回ったとき</td>
-                        <td><span class="badge badge-red">CRITICAL (重大)</span></td>
-                        <td>電池が切れそうな端末をお知らせ。交換時期がわかります。</td>
+                        <td><code>GET</code></td>
+                        <td><code>/iot/api.php?endpoint=devices</code></td>
+                        <td>登録端末一覧 & 保留中コマンド数取得</td>
+                        <td><code>[{"device_id":"DEV-ESP32-001","status":"ONLINE",...}]</code></td>
                     </tr>
                     <tr>
-                        <td><strong>電波微弱アラート</strong></td>
-                        <td>電波強度が <strong>-85 dBm</strong> より弱いとき</td>
-                        <td><span class="badge badge-amber">WARNING (警告)</span></td>
-                        <td>Wi-Fiルーターから離れすぎていて通信が途切れそうなとき。</td>
+                        <td><code>GET</code></td>
+                        <td><code>/iot/api.php?endpoint=telemetry/history</code></td>
+                        <td>時系列テレメトリ履歴取得 (グラフ用)</td>
+                        <td><code>[{"metrics":{"temperature":25.4,...}},...]</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST</code></td>
+                        <td><code>/iot/api.php?endpoint=commands</code></td>
+                        <td>リモートコマンド発行 (Web UI ➔ キュー)</td>
+                        <td><code>{"status":"QUEUED","command_id":"cmd-1787..."}</code></td>
+                    </tr>
+                    <tr>
+                        <td><code>POST</code></td>
+                        <td><code>/iot/api.php?endpoint=commands/ack</code></td>
+                        <td>エッジ端末からの実行完了 ACK 受領</td>
+                        <td><code>{"status":"ACK_RECORDED"}</code></td>
                     </tr>
                 </tbody>
             </table>
         </section>
 
-        <!-- 5. センサー端末の遠隔操作 -->
+        <!-- 5. GMO サーバへのパッケージ配置手順 -->
         <section id="sec-5">
-            <h2>🎮 5. センサー端末の遠隔操作 (リモート制御 & 起動間隔変更)</h2>
-            <p>画面左下の **「リモートコマンド送信パネル」** から、遠隔地のセンサー端末に指示を送ることができます。</p>
-
-            <div class="step-container">
-                <div class="step-item">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>対象端末を選択</h4>
-                        <p>デバイステーブルから指示を送りたい端末（例: <code>DEV-ESP32-001</code>）をクリックして選択します。パネル上に「現在の起動間隔」が表示されます。</p>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>変更したいボタンをクリック</h4>
-                        <p><strong>[ ⏱ スリープ10秒に変更 ]</strong> または <strong>[ ⏱ スリープ60秒に変更 ]</strong> をクリックします。</p>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>リアルタイム経過表示 & 自動反映</h4>
-                        <p>ボタンを押すと直ちに <strong>「⏳ コマンド送信待ちです (1秒経過... 2秒経過...)」</strong> とカウントアップが始まります。端末がスリープから目覚めて通信した瞬間に設定が反映され、<strong>「✅ コマンドがエッジデバイスに送信・適用されました (所要時間: 8秒)」</strong> と通知されます。以降は設定した間隔が永続的に維持されます。</p>
-                    </div>
-                </div>
+            <h2>5. GMO サーバへのパッケージ配置手順</h2>
+            <div class="alert-success">
+                <strong>配置フォルダ & ファイル構成:</strong><br>
+                <code>public_html/www.gontaro.org/iot/</code> 直下に以下のファイルを配置します：
+                <ul>
+                    <li><code>index.html</code> (パーミッション: <strong>644</strong>)</li>
+                    <li><code>api.php</code> (パーミッション: <strong>644</strong>)</li>
+                </ul>
+                ※ <code>iot</code> フォルダ自体のパーミッションは <strong>755</strong> に設定してください。
             </div>
         </section>
 
-                        <ul>
-                            <li><strong>設定変更 (CONFIG_UPDATE):</strong> 送信間隔（スリープ時間）を10秒や60秒に変更します。</li>
-                            <li><strong>再起動 (REBOOT):</strong> 端末を安全に再起動させます。</li>
-                            <li><strong>セルフテスト (SELF_TEST):</strong> センサやメモリの自己診断を実行させます。</li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="step-item">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>「コマンド送信」をクリック</h4>
-                        <p>端末が次にスリープから目覚めて通信してきた瞬間に、自動的に指示が届き実行されます。</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. よくある質問 (Q&A) -->
+        <!-- 6. Go ローカル mTLS サーバの起動 & テスト -->
         <section id="sec-6">
-            <h2>❓ 6. よくある質問・トラブルシューティング (Q&A)</h2>
+            <h2>6. Go ローカル mTLS サーバの起動 & テスト</h2>
+            <pre><code># 1. ローカル Go サーバの起動
+cd x:\iot-platform-project\server
+go run main.go
 
-            <div class="faq-item">
-                <div class="faq-q">Q. ブラウザで画面が開きません（接続できません）</div>
-                <div class="faq-a">
-                    <strong>A.</strong> 管理サーバが起動していない可能性があります。ターミナルで <code>cd server</code> ➔ <code>go run main.go</code> を実行してサーバが立ち上がっているかご確認ください。また、URLが <code>http://localhost:8080/</code> になっているかご確認ください。
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-q">Q. 端末のデータが届きません（OFFLINEのまま）</div>
-                <div class="faq-a">
-                    <strong>A.</strong> 以下の点をご確認ください：
-                    <ol>
-                        <li>端末（ESP32）に USB 電源が供給されているか（LEDが点滅しているか）。</li>
-                        <li>Wi-Fi の電波が届いているか（SSIDやパスワードが正しいか）。</li>
-                        <li>PC のファイアウォールでポート <code>8443</code> への通信が遮断されていないか。</li>
-                    </ol>
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-q">Q. データをリセット（初期化）したいときは？</div>
-                <div class="faq-a">
-                    <strong>A.</strong> <code>server/</code> フォルダ内にある <code>iot_platform.db</code> ファイルを削除してサーバを再起動すると、データベースが完全にクリーンな初期状態に戻ります。
-                </div>
-            </div>
-
-            <div class="faq-item">
-                <div class="faq-q">Q. 詳しい技術仕様や回路図を見たいのですが？</div>
-                <div class="faq-a">
-                    <strong>A.</strong> 画面右上の **「📖 総合仕様書 (HTML)」** ボタンをクリックすると、エンジニア向けの完全な技術仕様書・ピン配置図・API一覧をご覧いただけます。
-                </div>
-            </div>
+# 2. 全自動テストの実行 (100% PASS)
+go test -v ./...</code></pre>
         </section>
     </div>
 
