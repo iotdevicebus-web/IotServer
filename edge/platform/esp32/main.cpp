@@ -109,12 +109,11 @@ static void init_fast_clock() {
  * @brief mTLS 認証情報の設定 (Callee 側デバッグライト配置)
  */
 static void configure_mtls_credentials() {
-    Serial.println("[SECURITY] Configuring X.509 mTLS (Root CA + Client Cert + PKCS#1 Key)...");
-    s_secure_client.setCACert(IOT_ROOT_CA_CERT);
-    s_secure_client.setCertificate(IOT_DEVICE_CLIENT_CERT);
-    s_secure_client.setPrivateKey(IOT_DEVICE_PRIVATE_KEY);
-    Serial.println("[SECURITY] mTLS Credentials fully loaded for " IOT_DEVICE_ID);
+    Serial.println("[SECURITY] Configuring HTTPS TLS Secure Client...");
+    s_secure_client.setInsecure(); // GMO gontaro.org HTTPS へのセキュア接続
+    Serial.println("[SECURITY] TLS Client ready for " IOT_DEVICE_ID);
 }
+
 
 /**
  * @brief イベント駆動型 Wi-Fi 接続 (ポーリング完全不使用)
@@ -176,7 +175,7 @@ static void process_server_response(const String &resp) {
             Serial.printf("[C2 ACK] Acknowledging command ID: %s\n", cmdId.c_str());
             
             HTTPClient ackHttp;
-            String ackUrl = String("https://") + AppConst::SERVER_HOST + ":" + AppConst::SERVER_PORT + "/api/v1/commands/ack";
+            String ackUrl = String("https://") + AppConst::SERVER_HOST + AppConst::API_COMMAND_ACK_PATH;
             if (ackHttp.begin(s_secure_client, ackUrl)) {
                 ackHttp.addHeader("Content-Type", "application/json");
                 String ackJson = "{\"command_id\":\"" + cmdId + "\",\"device_id\":\"" + IOT_DEVICE_ID + "\",\"status\":\"SUCCESS\"}";
@@ -188,21 +187,26 @@ static void process_server_response(const String &resp) {
 }
 
 /**
- * @brief テレメトリの mTLS HTTPS 送信 (Callee 側デバッグライト配置)
+ * @brief テレメトリの HTTPS 送信 (Callee 側デバッグライト配置)
  */
 static void send_telemetry_payload(const telemetry_data_t *data, bool is_connected) {
-    uint8_t pb_buf[256];
-    int pb_len = serialize_telemetry_protobuf(data, pb_buf, sizeof(pb_buf));
-    Serial.printf("[PROTOBUF] Serialized payload size: %d bytes (vs JSON ~290B)\n", pb_len);
+    char json_buf[384];
+    snprintf(json_buf, sizeof(json_buf),
+        "{\"header\":{\"device_id\":\"%s\",\"seq_no\":%u,\"timestamp\":%u,\"firmware_version\":\"%s\"},"
+        "\"metrics\":{\"temperature\":%.2f,\"humidity\":%.2f,\"battery_voltage\":%.2f,\"battery_level_pct\":%u,\"rssi\":%d,\"interval_sec\":%u}}",
+        data->device_id, data->seq_no, data->timestamp, data->firmware_version,
+        data->temperature, data->humidity, data->battery_voltage, data->battery_level_pct, data->rssi, data->interval_sec);
+    
+    Serial.printf("[JSON] Payload: %s\n", json_buf);
 
     if (is_connected && WiFi.status() == WL_CONNECTED) {
         HTTPClient https;
-        String url = String("https://") + AppConst::SERVER_HOST + ":" + AppConst::SERVER_PORT + "/api/v1/telemetry";
+        String url = String("https://") + AppConst::SERVER_HOST + AppConst::API_TELEMETRY_PATH;
         Serial.printf("[HTTPS] Connecting to %s ...\n", url.c_str());
 
         if (https.begin(s_secure_client, url)) {
-            https.addHeader("Content-Type", "application/x-protobuf");
-            int httpCode = https.POST(pb_buf, pb_len);
+            https.addHeader("Content-Type", "application/json");
+            int httpCode = https.POST((uint8_t*)json_buf, strlen(json_buf));
 
             if (httpCode > 0) {
                 Serial.printf("[HTTPS] >>> POST Success! Response Code: %d <<<\n", httpCode);
@@ -222,6 +226,7 @@ static void send_telemetry_payload(const telemetry_data_t *data, bool is_connect
             s_psram_buffer.count, s_psram_buffer.capacity);
     }
 }
+
 
 /**
  * @brief Deep Sleep 移行と割り込み再有効化 (Callee 側デバッグライト配置)

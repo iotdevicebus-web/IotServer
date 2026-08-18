@@ -31,12 +31,15 @@ constexpr uint16_t EPD_HEIGHT       = 200;  // 画面高さ (ピクセル)
 constexpr size_t PSRAM_BUFFER_CAPACITY   = 10000; // 8MB PSRAM 保持件数 (~1.5MB)
 constexpr size_t SRAM_BUFFER_FALLBACK    = 64;    // 内部 SRAM フォールバック件数
 
-// --- ネットワーク & サーバ設定 ---
-constexpr uint16_t SERVER_PORT           = 8443;
+// --- ネットワーク & サーバ設定 (GMO gontaro.org 本番サーバ) ---
+constexpr uint16_t SERVER_PORT           = 443;
 constexpr uint32_t WIFI_TIMEOUT_MS       = 10000; // イベント駆動待機タイムアウト (10秒)
-constexpr const char* SERVER_HOST        = "192.168.3.4";
+constexpr const char* SERVER_HOST        = "www.gontaro.org";
+constexpr const char* API_TELEMETRY_PATH = "/iot/api.php?endpoint=telemetry";
+constexpr const char* API_COMMAND_ACK_PATH = "/iot/api.php?endpoint=commands/ack";
 constexpr const char* WIFI_SSID          = "ControlAdLab";
 constexpr const char* WIFI_PASSWORD      = "ControlAD";
+
 
 // --- 時刻同期 & スリープ設定 ---
 constexpr time_t FAST_CLOCK_INIT_TIMESTAMP = 1786968000; // 2026-08-17 12:00:00 UTC (0msセット)

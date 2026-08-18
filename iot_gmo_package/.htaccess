@@ -1,0 +1,23 @@
+# ==============================================================================
+# IoT Platform Apache Rewrite Configuration
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /iot/
+
+    # 既存の静的ファイル (index.html 等) はそのまま配信
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # API エンドポイントを api.php にルーティング
+    RewriteRule ^api/v1/(.*)$ api.php?endpoint=$1 [QSA,L]
+    RewriteRule ^healthz$ api.php?endpoint=healthz [QSA,L]
+</IfModule>
+
+# SQLite データベースファイルを外部から直接ダウンロードされるのを防止
+<Files "iot_platform.db">
+    Order allow,deny
+    Deny from all
+</Files>
