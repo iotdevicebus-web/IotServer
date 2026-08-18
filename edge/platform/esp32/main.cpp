@@ -16,7 +16,9 @@ extern "C" {
 #include "osal.h"
 #include "hal.h"
 #include "hal_sleep.h"
+#include "hal_epaper.h"
 #include "app_state_machine.h"
+
 #include "telemetry_serializer.h"
 #include "protobuf_serializer.h"
 #include "telemetry_buffer.h"
@@ -305,8 +307,28 @@ void setup() {
     // 6. Protobuf シリアライズ & mTLS HTTPS 送信
     send_telemetry_payload(&data, connected);
 
-    // 7. Deep Sleep 移行 (全処理完了により割り込み再有効化)
+    // 7. e-Paper 画面表示の更新 (初回起動時はテスト画面、以降はステータス画面)
+    if (s_boot_count == 1) {
+        Serial.println("[EPD] Boot #1: Rendering Test Pattern Screen...");
+        hal_epaper_show_test_screen();
+    } else {
+        String ip_str = (connected && WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "Disconnected";
+        epd_status_info_t epd_info;
+        epd_info.device_id = data.device_id;
+        epd_info.ip_address = ip_str.c_str();
+        epd_info.boot_count = s_boot_count;
+        epd_info.interval_sec = s_sleep_interval_sec;
+        epd_info.temperature = data.temperature;
+        epd_info.humidity = data.humidity;
+        epd_info.battery_voltage = data.battery_voltage;
+        epd_info.server_status = connected ? "200 OK (mTLS)" : "Buffered";
+        hal_epaper_show_status(&epd_info);
+    }
+    hal_epaper_sleep(); // 表示更新後、e-Paper を超低消費電力スリープへ
+
+    // 8. Deep Sleep 移行 (全処理完了により割り込み再有効化)
     enter_power_saving_sleep();
+
 }
 
 void loop() {

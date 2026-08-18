@@ -9,6 +9,9 @@ bin/
 *.lib
 *.elf
 *.bin
+iot-server-linux
+server/deploy/package/
+*.zip
 
 # Database and runtime logs
 *.db

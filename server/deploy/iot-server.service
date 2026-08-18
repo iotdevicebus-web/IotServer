@@ -1,0 +1,25 @@
+[Unit]
+Description=IoT Platform Management Server (mTLS + Web Dashboard)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/iot-server
+ExecStart=/opt/iot-server/iot-server-linux
+Restart=always
+RestartSec=5
+
+# 環境変数設定
+Environment=PORT=8080
+Environment=EDGE_PORT=8443
+Environment=DB_DRIVER=sqlite
+Environment=DB_DSN=iot_platform.db
+Environment=REQUIRE_MTLS=true
+
+# 標準出力・エラーログ出力
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

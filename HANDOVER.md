@@ -14,9 +14,11 @@
 | **PC / IoT 管理サーバ IP** | **192.168.3.4** | 証明書の SAN に DNS.4 = 192.168.3.4 を登録済み |
 | **mTLS 受信ポート** | **:8443** (HTTPS) | 双方向暗号化通信 (RequireAndVerifyClientCert) |
 | **管理 Web UI ポート** | **:8080** (HTTP) | ダッシュボード URL: http://localhost:8080/ |
-| **接続 Wi-Fi SSID / PW** | **ControlAdLab** / **ControlAD** | dge/platform/esp32/AppConst.hpp で定義 |
+| **接続 Wi-Fi SSID / PW** | **ControlAdLab** / **ControlAD** |  dge/platform/esp32/AppConst.hpp で定義 |
 | **エッジデバイス IP** | **192.168.3.65** (DHCP) | デバイス固有 ID: **DEV-ESP32-001** |
 | **暗号化証明書仕様** | **2048-bit RSA / PKCS#1** | MbedTLS ハードウェアアクセラレーション完全準拠 |
+| **電子ペーパー (e-Paper)** | **Waveshare 1.54" Rev2.1** | 200x200 SSD1681 白黒 (GxEPD2) |
+| **e-Paper 配線 (GPIO)** | **DIN:11, CLK:12, CS:10, DC:9, RST:8, BUSY:7** | FSPI ネイティブ / PSRAM(26-37)競合回避 |
 
 ---
 
@@ -28,19 +30,25 @@
 * サーバ証明書の SAN（Subject Alternative Name）に DNS.4 = 192.168.3.4 を追加し、MbedTLS のホスト名照合バグ（-9984）を完全解決。実機ログにて 100% 連続で 200 OK を達成。
 
 ### ② 8MB Octal PSRAM (SDRAM) 大容量オフラインバッファ
-* platformio.ini に oard_build.arduino.memory_type = qio_opi, oard_build.psram_type = opi, -DBOARD_HAS_PSRAM を設定。
+* platformio.ini に  oard_build.arduino.memory_type = qio_opi,  oard_build.psram_type = opi, -DBOARD_HAS_PSRAM を設定。
 * heap_caps_malloc(..., MALLOC_CAP_SPIRAM) により **10,000 件（約 1.5MB、約 41 時間〜1 週間分）** のテレメトリを保持可能。
 
 ### ③ 完全イベント駆動 (Zero-Polling) & 厳格な割り込みマスク制御
 * **Wi-Fi 接続**: while ポーリングを全廃し、WiFi.onEvent(on_wifi_event) と FreeRTOS バイナリセマフォ（xSemaphoreTake）による即時起床待機（CPU浪費ゼロ）へ移行。
 * **GPIO 4 外部スイッチ (Active LOW)**: 起床直後に HAL 経由で即座に割り込みを完全禁止（マスク）➔ 処理完了（Deep Sleep 移行直前）にスリープ復帰割り込みを再有効化（チャタリング誤動作・不要ディレイの完全排除）。
 
-### ④ 双方向 C2 動的スリープ間隔制御 & 永続化
+### ④ Waveshare 1.54inch e-Paper (Rev2.1) 状態表示 & 超低消費電力制御
+* **HAL 抽象化**: edge/hal/include/hal_epaper.h および edge/platform/esp32/hal_esp32_epaper.cpp で GxEPD2 制御をカプセル化。
+* **起動時テスト画面 (Boot #1)**: 二重外枠、反転タイトル帯、幾何学図形（二重四角/円/三角）、市松模様によるハードウェア動作確認。
+* **リアルタイム稼働ステータス (Boot #2〜)**: デバイスID、IPアドレス、起動回数、スリープ周期、温湿度、バッテリー電圧、mTLS サーバ通信結果を大型フォントで表示。
+* **超低消費電力 Hibernate**: 描画完了後に e-Paper コントローラを休止させ、ESP32 Deep Sleep 中も電力消費ゼロで画面を永続保持。
+
+### ⑤ 双方向 C2 動的スリープ間隔制御 & 永続化
 * Web UI から「スリープ10秒に変更」「スリープ60秒に変更」を発行すると、エッジが次回起床時に即時反映。
 * サーバ側（deviceSleepConfigs）およびエッジ側（RTC Fast Memory s_sleep_interval_sec）で設定を記憶し、**コマンド実行後も変更後のスリープ間隔を恒久的に維持**。
 * エッジ側からコマンド ACK（POST /api/v1/commands/ack）を自動返却。
 
-### ⑤ エッジからの現在の起動間隔電文送信 & Web UI リアルタイム表示
+### ⑥ エッジからの現在の起動間隔電文送信 & Web UI リアルタイム表示
 * Protobuf ペイロード（MetricsData.interval_sec = 6）に現在の起動間隔を含めて送信。
 * Web UI のデバイステーブルに **「起動間隔 (⏱ 10秒 / 60秒)」カラム** を新設し、各端末の設定状態をリアルタイム表示。
 
@@ -86,10 +94,13 @@ x:/iot-platform-project/
 ├── edge/
 │   ├── platform/esp32/
 │   │   ├── main.cpp                    # ESP32-S3 エントリポイント (QC規約準拠・完全イベント駆動)
-│   │   ├── AppConst.hpp                # アプリケーション定数一元管理 (マジックナンバー排除)
+│   │   ├── AppConst.hpp                # アプリケーション定数一元管理 (e-Paper GPIO・マジックナンバー排除)
 │   │   ├── hal_esp32_sleep.c           # HAL スリープ・割り込み制御実装 (カプセル化)
+│   │   ├── hal_esp32_epaper.cpp        # Waveshare 1.54" e-Paper HAL 実装 (SSD1681 / GxEPD2)
 │   │   └── QC_check_ESP32.md           # ESP32 品質管理チェック規約
-│   ├── hal/include/hal_sleep.h         # HAL スリープ・割り込みヘッダ
+│   ├── hal/include/
+│   │   ├── hal_sleep.h                 # HAL スリープ・割り込みヘッダ
+│   │   └── hal_epaper.h                # HAL 電子ペーパーヘッダ
 │   └── middleware/serializer/
 │       ├── protobuf_serializer.c / .h  # 超軽量 Protobuf v3 シリアライザ (interval_sec 対応)
 │       └── telemetry_serializer.h      # テレメトリ構造体定義

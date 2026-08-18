@@ -19,17 +19,34 @@ type Config struct {
 }
 
 func LoadConfig() *Config {
+	serverCert := getEnv("SERVER_CERT", findCertPath("../tools/certs/out/server.crt", "certs/server.crt", "tools/certs/out/server.crt"))
+	serverKey := getEnv("SERVER_KEY", findCertPath("../tools/certs/out/server.key", "certs/server.key", "tools/certs/out/server.key"))
+	rootCACert := getEnv("ROOT_CA_CERT", findCertPath("../tools/certs/out/ca.crt", "certs/ca.crt", "tools/certs/out/ca.crt"))
+
 	return &Config{
 		Port:        getEnv("PORT", "8443"),
 		RequireMTLS: getEnv("REQUIRE_MTLS", "true") == "true",
-		ServerCert:  getEnv("SERVER_CERT", "../tools/certs/out/server.crt"),
-		ServerKey:   getEnv("SERVER_KEY", "../tools/certs/out/server.key"),
-		RootCACert:  getEnv("ROOT_CA_CERT", "../tools/certs/out/ca.crt"),
+		ServerCert:  serverCert,
+		ServerKey:   serverKey,
+		RootCACert:  rootCACert,
 		DBDriver:    getEnv("DB_DRIVER", "sqlite"),
 		DBDSN:       getEnv("DB_DSN", "iot_platform.db"),
 		WebhookURL:  getEnv("WEBHOOK_URL", ""),
 	}
 }
+
+func findCertPath(paths ...string) string {
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	if len(paths) > 0 {
+		return paths[0]
+	}
+	return ""
+}
+
 
 
 
