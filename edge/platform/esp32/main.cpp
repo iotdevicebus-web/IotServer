@@ -66,18 +66,29 @@ static void save_wifi_credentials(const String &ssid, const String &password) {
 }
 
 /**
- * @brief リセット起動時のスイッチ押下状態を判定 (GPIO 4 または GPIO 0)
+ * @brief リセット起動時のスイッチ押下状態を判定 (リセットスタート時のみ & スイッチ押下)
  */
 static bool check_wifi_setup_switch_pressed() {
+    // 1. Deep Sleep からの起床時 (タイマー起床、またはスイッチ手動起床) は WiFiManager に入らず通常レポート
+    esp_reset_reason_t rst_reason = esp_reset_reason();
+    if (rst_reason == ESP_RST_DEEPSLEEP) {
+        Serial.println("[SETUP_BTN] Deep Sleep Wakeup detected -> Proceeding with Normal Telemetry Report.");
+        return false;
+    }
+
+    // 2. リセットスタート時 (電源投入 / RSTボタン / リセット) のみスイッチ状態をチェック
     pinMode(AppConst::PIN_WAKEUP_BUTTON, INPUT_PULLUP);
     pinMode(AppConst::PIN_BOOT_BUTTON, INPUT_PULLUP);
-    delay(50); // チャタリング防止
+    delay(60); // チャタリング防止
     bool pressed = (digitalRead(AppConst::PIN_WAKEUP_BUTTON) == LOW || digitalRead(AppConst::PIN_BOOT_BUTTON) == LOW);
     if (pressed) {
-        Serial.println("[SETUP_BTN] >>> Switch Press Detected at Startup! Entering WiFiManager Setup Mode... <<<");
+        Serial.println("[SETUP_BTN] >>> Switch Press Detected at RESET START! Entering WiFiManager Setup Mode... <<<");
+    } else {
+        Serial.println("[SETUP_BTN] Reset Start without Switch -> Proceeding with Normal Telemetry Report.");
     }
     return pressed;
 }
+
 
 /**
  * @brief WiFiManager キャプティブポータルを起動して周囲のルータを検索・接続設定
