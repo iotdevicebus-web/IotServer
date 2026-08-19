@@ -398,9 +398,20 @@
                 <canvas id="tempChart"></canvas>
             </div>
 
-            <div class="chart-container" style="height: 200px; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; margin-bottom: 6px; padding: 0 2px; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">🔋 バッテリ電圧 & 📶 Wi-Fi 電波強度 (RSSI)</div>
+                <div style="font-size: 11px; color: var(--text-secondary); background: rgba(15, 23, 42, 0.7); padding: 4px 10px; border-radius: 6px; border: 1px solid #334155; display: flex; gap: 10px; align-items: center;">
+                    <span style="font-weight: 600; color: #c084fc;">📶 RSSIドット色:</span>
+                    <span><strong style="color: #10b981;">🟢 -30〜-60dBm</strong> (良好)</span>
+                    <span><strong style="color: #f59e0b;">🟡 -60〜-75dBm</strong> (普通)</span>
+                    <span><strong style="color: #ef4444;">🔴 &lt;-75dBm</strong> (弱い)</span>
+                </div>
+            </div>
+
+            <div class="chart-container" style="height: 200px;">
                 <canvas id="batteryChart"></canvas>
             </div>
+
         </div>
     </div>
 
@@ -554,7 +565,7 @@
                             yAxisID: 'y'
                         },
                         {
-                            label: '電波強度 RSSI (dBm)',
+                            label: '電波強度 RSSI (dBm) [🟢-30〜-60 良好 | 🟡-60〜-75 普通 | 🔴<-75 弱い]',
                             borderColor: '#a855f7',
                             borderWidth: 2,
                             backgroundColor: 'transparent',
@@ -569,6 +580,7 @@
                             tension: 0.3,
                             yAxisID: 'y1'
                         }
+
                     ]
                 },
                 options: {
@@ -779,7 +791,7 @@
                     }
                     if (!batteryChartInstance.data.datasets[1]) {
                         batteryChartInstance.data.datasets[1] = { 
-                            label: '電波強度 RSSI (dBm)', 
+                            label: '電波強度 RSSI (dBm) [🟢-30〜-60 良好 | 🟡-60〜-75 普通 | 🔴<-75 弱い]', 
                             borderColor: '#a855f7', 
                             borderWidth: 2,
                             backgroundColor: 'transparent', 
@@ -793,7 +805,9 @@
                             yAxisID: 'y1' 
                         };
                     }
+                    batteryChartInstance.data.datasets[1].label = '電波強度 RSSI (dBm) [🟢-30〜-60 良好 | 🟡-60〜-75 普通 | 🔴<-75 弱い]';
                     batteryChartInstance.data.datasets[0].data = batts;
+
                     batteryChartInstance.data.datasets[1].data = rssis;
                     batteryChartInstance.data.datasets[1].borderDash = [];
                     batteryChartInstance.data.datasets[1].borderWidth = 2;
