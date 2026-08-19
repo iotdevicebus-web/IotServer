@@ -149,86 +149,102 @@ void hal_epaper_show_status(const epd_status_info_t* info) {
         s_display.fillScreen(GxEPD_WHITE);
 
         // 1. ヘッダー帯 (デバイスID & 起動回数を表示)
-        s_display.fillRect(0, 0, 200, 24, GxEPD_BLACK);
+        s_display.fillRect(0, 0, 200, 22, GxEPD_BLACK);
         s_display.setTextColor(GxEPD_WHITE);
         s_display.setTextSize(2);
-        s_display.setCursor(6, 4);
+        s_display.setCursor(6, 3);
         s_display.print(info->device_id ? info->device_id : "DEV-ESP32");
 
         s_display.setTextSize(1);
-        s_display.setCursor(160, 8);
+        s_display.setCursor(160, 7);
         s_display.printf("#%u", info->boot_count);
 
         // 2. ネットワーク情報 (IPアドレス)
         s_display.setTextColor(GxEPD_BLACK);
         s_display.setTextSize(1);
-        s_display.setCursor(6, 28);
+        s_display.setCursor(6, 26);
         s_display.printf("IP: %s", info->ip_address ? info->ip_address : "Connecting...");
 
-        s_display.drawFastHLine(4, 39, 192, GxEPD_BLACK);
+        s_display.drawFastHLine(4, 37, 192, GxEPD_BLACK);
 
-        // 3. メインセンサー値 (TextSize 3 の超大型フォントで温度・湿度を表示)
+        // 3. メインセンサー値 (TextSize 3 の大型フォントで温度・湿度を表示)
         // 温度 (Temperature)
         s_display.setTextSize(3);
-        s_display.setCursor(6, 44);
+        s_display.setCursor(6, 41);
         s_display.printf("%.1f", info->temperature);
 
         // 単位 ℃
         s_display.setTextSize(1);
-        s_display.setCursor(82, 44);
+        s_display.setCursor(82, 41);
         s_display.print("o");
         s_display.setTextSize(2);
-        s_display.setCursor(90, 48);
+        s_display.setCursor(90, 45);
         s_display.print("C");
 
         // 縦区切り線
-        s_display.drawFastVLine(104, 42, 34, GxEPD_BLACK);
+        s_display.drawFastVLine(104, 39, 34, GxEPD_BLACK);
 
         // 湿度 (Humidity)
         s_display.setTextSize(3);
-        s_display.setCursor(114, 44);
+        s_display.setCursor(114, 41);
         s_display.printf("%.0f", info->humidity);
 
         // 単位 %
         s_display.setTextSize(2);
-        s_display.setCursor(168, 48);
+        s_display.setCursor(168, 45);
         s_display.print("%");
 
-        s_display.drawFastHLine(4, 79, 192, GxEPD_BLACK);
+        s_display.drawFastHLine(4, 75, 192, GxEPD_BLACK);
 
-        // 4. バッテリー & 周期 (TextSize 2 の中型フォントで明瞭表示)
+        // 4. バッテリー & 周期 (TextSize 2 の中型フォント)
         s_display.setTextSize(2);
-        s_display.setCursor(6, 83);
+        s_display.setCursor(6, 79);
         s_display.printf("%.2fV", info->battery_voltage);
 
-        s_display.setCursor(108, 83);
+        s_display.setCursor(108, 79);
         s_display.printf("Intv:%us", info->interval_sec);
 
-        s_display.drawFastHLine(4, 102, 192, GxEPD_BLACK);
+        s_display.drawFastHLine(4, 97, 192, GxEPD_BLACK);
 
-        // 5. 日本標準時 (JST) 時刻表示
+        // 5. 日本標準時 (JST) 超大型時刻表示
+        // 日付・ラベル (TextSize 1)
+        char date_buf[16] = "2026/08/19";
+        char time_buf[16] = "14:05:22";
+        if (info->time_jst_str && strlen(info->time_jst_str) >= 19) {
+            strncpy(date_buf, info->time_jst_str, 10);
+            date_buf[10] = '\0';
+            strncpy(time_buf, info->time_jst_str + 11, 8);
+            time_buf[8] = '\0';
+        }
+
         s_display.setTextSize(1);
-        s_display.setCursor(6, 107);
-        s_display.printf("JST: %s", (info->time_jst_str && strlen(info->time_jst_str) > 0) ? info->time_jst_str : "2026/08/19 14:00:00");
+        s_display.setCursor(6, 100);
+        s_display.printf("JST (UTC+9)  %s", date_buf);
 
-        s_display.drawFastHLine(4, 120, 192, GxEPD_BLACK);
+        // 時刻本体 (TextSize 3 特大フォントで強調表示)
+        s_display.setTextSize(3);
+        s_display.setCursor(28, 111);
+        s_display.printf("%s", time_buf);
+
+        s_display.drawFastHLine(4, 137, 192, GxEPD_BLACK);
 
         // 6. サーバ通信ステータス枠 (TextSize 2 で結果を強調)
-        s_display.drawRoundRect(4, 124, 192, 44, 4, GxEPD_BLACK);
+        s_display.drawRoundRect(4, 140, 192, 41, 4, GxEPD_BLACK);
         s_display.setTextSize(1);
-        s_display.setCursor(10, 129);
+        s_display.setCursor(10, 144);
         s_display.printf("SERVER: %s", AppConst::SERVER_HOST);
 
         s_display.setTextSize(2);
-        s_display.setCursor(10, 143);
+        s_display.setCursor(10, 157);
         s_display.printf("%s", info->server_status ? info->server_status : "ONLINE");
 
-        // 7. フッター帯 (ゼロトラスト暗号化ステータス)
-        s_display.fillRect(0, 172, 200, 28, GxEPD_BLACK);
+        // 7. フッター帯 (mTLS / 暗号化ステータスを小型 TextSize 1 でスッキリ配置)
+        s_display.fillRect(0, 185, 200, 15, GxEPD_BLACK);
         s_display.setTextColor(GxEPD_WHITE);
-        s_display.setTextSize(2);
-        s_display.setCursor(14, 178);
-        s_display.print("mTLS SECURE");
+        s_display.setTextSize(1);
+        s_display.setCursor(16, 189);
+        s_display.print("mTLS 2048-bit / HTTPS SECURE");
+
 
     } while (s_display.nextPage());
 
