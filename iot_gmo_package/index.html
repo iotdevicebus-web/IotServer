@@ -479,6 +479,13 @@
             }
         }
 
+        function getRssiColor(val) {
+            if (val === null || val === undefined || isNaN(val)) return '#a855f7';
+            if (val >= -60) return '#10b981'; // -30 〜 -60 dBm: 緑 (非常に強い・良好)
+            if (val >= -75) return '#f59e0b'; // -60 〜 -75 dBm: 黄 (普通・安定通信可能)
+            return '#ef4444';                 // -75 dBm以下: 赤 (弱い)
+        }
+
         function initCharts() {
             const canvasTemp = document.getElementById('tempChart');
             const canvasBatt = document.getElementById('batteryChart');
@@ -548,9 +555,15 @@
                         {
                             label: '電波強度 RSSI (dBm)',
                             borderColor: '#a855f7',
+                            borderWidth: 2,
                             backgroundColor: 'transparent',
-                            borderDash: [4, 4],
-                            pointRadius: 3,
+                            pointRadius: 4.5,
+                            pointHoverRadius: 7,
+                            pointBorderColor: '#0f172a',
+                            pointBorderWidth: 1.5,
+                            pointBackgroundColor: function(context) {
+                                return getRssiColor(context.raw);
+                            },
                             data: [],
                             tension: 0.3,
                             yAxisID: 'y1'
@@ -569,6 +582,7 @@
                 }
             });
         }
+
 
         async function fetchData() {
             try {
@@ -763,12 +777,33 @@
                         batteryChartInstance.data.datasets[0] = { label: 'バッテリ電圧 (V)', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, data: [], tension: 0.3, yAxisID: 'y' };
                     }
                     if (!batteryChartInstance.data.datasets[1]) {
-                        batteryChartInstance.data.datasets[1] = { label: '電波強度 RSSI (dBm)', borderColor: '#a855f7', backgroundColor: 'transparent', borderDash: [4, 4], pointRadius: 3, data: [], tension: 0.3, yAxisID: 'y1' };
+                        batteryChartInstance.data.datasets[1] = { 
+                            label: '電波強度 RSSI (dBm)', 
+                            borderColor: '#a855f7', 
+                            borderWidth: 2,
+                            backgroundColor: 'transparent', 
+                            borderDash: [], 
+                            pointRadius: 4.5, 
+                            pointHoverRadius: 7,
+                            pointBorderColor: '#0f172a',
+                            pointBorderWidth: 1.5,
+                            data: [], 
+                            tension: 0.3, 
+                            yAxisID: 'y1' 
+                        };
                     }
                     batteryChartInstance.data.datasets[0].data = batts;
                     batteryChartInstance.data.datasets[1].data = rssis;
+                    batteryChartInstance.data.datasets[1].borderDash = [];
+                    batteryChartInstance.data.datasets[1].borderWidth = 2;
+                    batteryChartInstance.data.datasets[1].pointRadius = 4.5;
+                    batteryChartInstance.data.datasets[1].pointHoverRadius = 7;
+                    batteryChartInstance.data.datasets[1].pointBorderColor = '#0f172a';
+                    batteryChartInstance.data.datasets[1].pointBorderWidth = 1.5;
+                    batteryChartInstance.data.datasets[1].pointBackgroundColor = rssis.map(v => getRssiColor(v));
                     batteryChartInstance.update();
                 }
+
 
                 if (history.length > 0) {
                     const latest = history[history.length - 1];
