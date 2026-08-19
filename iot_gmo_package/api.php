@@ -109,7 +109,7 @@ try {
         $deviceId = $header['device_id'];
         $fwVersion = $header['firmware_version'] ?? '1.0.0';
         $seqNo = (int)($header['seq_no'] ?? 0);
-        $ts = (int)($header['timestamp'] ?? time());
+        $ts = time(); // サーバ受信時の正確な現在時刻を採用 (エッジ未同期時の固定タイムスタンプ誤りを完全防止)
         $temp = (float)($metrics['temperature'] ?? 0.0);
         $humi = (float)($metrics['humidity'] ?? 0.0);
         $battV = (float)($metrics['battery_voltage'] ?? 0.0);
@@ -139,6 +139,7 @@ try {
             $inStmt = $pdo->prepare("INSERT INTO devices (device_id, device_type, firmware_version, status, last_seen, registered_at, total_telemetries, current_interval_sec) VALUES (?, 'ESP32-S3', ?, 'ONLINE', ?, ?, 1, ?)");
             $inStmt->execute([$deviceId, $fwVersion, $ts, $ts, $interval]);
         }
+
 
         // 保留中コマンド取得
         $cmdStmt = $pdo->prepare("SELECT * FROM commands WHERE device_id = ? AND status = 'PENDING' ORDER BY created_at ASC");
@@ -216,17 +217,19 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? ORDER BY timestamp DESC LIMIT ?");
+        $stmt = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT ?");
         $stmt->execute([$deviceId, $limit]);
         $rows = $stmt->fetchAll();
 
         $history = [];
         foreach ($rows as $r) {
+            $tsVal = (int)$r['timestamp'];
             $history[] = [
                 'header' => [
                     'device_id' => $r['device_id'],
                     'seq_no' => (int)$r['seq_no'],
-                    'timestamp' => (int)$r['timestamp'],
+                    'timestamp' => $tsVal,
+                    'time_jst' => date('Y/m/d H:i:s', $tsVal),
                     'firmware_version' => '1.0.0'
                 ],
                 'metrics' => [
@@ -245,7 +248,23 @@ try {
         exit;
     }
 
+
+    // 4.5. 古いテレメトリ履歴クリア: /telemetry/clear
+    if ($endpoint === 'telemetry/clear') {
+        $deviceId = $_GET['device_id'] ?? '';
+        if (!empty($deviceId)) {
+            $stmt = $pdo->prepare("DELETE FROM telemetry WHERE device_id = ?");
+            $stmt->execute([$deviceId]);
+        } else {
+            $pdo->exec("DELETE FROM telemetry");
+        }
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['status' => 'CLEARED']);
+        exit;
+    }
+
     // 5. リモートコマンド発行: POST /api/v1/commands
+
     if ($endpoint === 'commands' && $method === 'POST') {
         $rawInput = file_get_contents('php://input');
         $req = json_decode($rawInput, true);

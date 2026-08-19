@@ -500,7 +500,10 @@
                 const history = await res.json();
                 
                 history.reverse();
-                const labels = history.map(h => new Date(h.header.timestamp * 1000).toLocaleTimeString());
+                const labels = history.map(h => {
+                    const d = new Date(h.header.timestamp * 1000);
+                    return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                });
                 const temps = history.map(h => h.metrics.temperature);
                 const humis = history.map(h => h.metrics.humidity);
                 const batts = history.map(h => h.metrics.battery_voltage);
@@ -517,9 +520,11 @@
                 if (history.length > 0) {
                     const latest = history[history.length - 1];
                     const interval = latest.metrics.interval_sec || 15;
+                    const jstTimeStr = latest.header.time_jst || new Date(latest.header.timestamp * 1000).toLocaleString('ja-JP');
                     document.getElementById('selected-device-meta').innerText = 
-                        `最新: ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm | 起動間隔: ${interval}秒)`;
+                        `最新 (${jstTimeStr}): ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm | 起動間隔: ${interval}秒)`;
                 }
+
             } catch (err) {
                 console.error("History fetch error:", err);
             }
