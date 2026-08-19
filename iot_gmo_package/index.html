@@ -458,9 +458,11 @@
 
         function showToast(msg) {
             const t = document.getElementById('toast');
-            t.innerText = msg;
-            t.style.display = 'block';
-            setTimeout(() => { t.style.display = 'none'; }, 3500);
+            if (t) {
+                t.innerText = msg;
+                t.style.display = 'block';
+                setTimeout(() => { t.style.display = 'none'; }, 3500);
+            }
         }
 
         function updateElapsedTimer() {
@@ -470,13 +472,28 @@
             
             if (startTime && pendingBox && pendingBox.style.display !== 'none') {
                 const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
-                document.getElementById('cmd-pending-text').innerText = 
-                    `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
+                const el = document.getElementById('cmd-pending-text');
+                if (el) {
+                    el.innerText = `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
+                }
             }
         }
 
         function initCharts() {
-            const ctxTemp = document.getElementById('tempChart').getContext('2d');
+            const canvasTemp = document.getElementById('tempChart');
+            const canvasBatt = document.getElementById('batteryChart');
+            if (!canvasTemp || !canvasBatt) return;
+
+            if (tempChartInstance) {
+                tempChartInstance.destroy();
+                tempChartInstance = null;
+            }
+            if (batteryChartInstance) {
+                batteryChartInstance.destroy();
+                batteryChartInstance = null;
+            }
+
+            const ctxTemp = canvasTemp.getContext('2d');
             tempChartInstance = new Chart(ctxTemp, {
                 type: 'line',
                 data: {
@@ -506,14 +523,14 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        y: { position: 'left', min: 0, max: 50, grid: { color: '#334155' }, ticks: { color: '#ef4444' } },
-                        y1: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false }, ticks: { color: '#06b6d4' } }
+                        y: { position: 'left', suggestedMin: 0, suggestedMax: 50, grid: { color: '#334155' }, ticks: { color: '#ef4444' } },
+                        y1: { position: 'right', suggestedMin: 0, suggestedMax: 100, grid: { drawOnChartArea: false }, ticks: { color: '#06b6d4' } }
                     },
                     plugins: { legend: { labels: { color: '#f8fafc' } } }
                 }
             });
 
-            const ctxBatt = document.getElementById('batteryChart').getContext('2d');
+            const ctxBatt = canvasBatt.getContext('2d');
             batteryChartInstance = new Chart(ctxBatt, {
                 type: 'line',
                 data: {
@@ -545,26 +562,30 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        y: { position: 'left', min: 3.0, max: 4.5, grid: { color: '#334155' }, ticks: { color: '#10b981' } },
-                        y1: { position: 'right', min: -100, max: -20, grid: { drawOnChartArea: false }, ticks: { color: '#a855f7' } }
+                        y: { position: 'left', suggestedMin: 3.0, suggestedMax: 4.5, grid: { color: '#334155' }, ticks: { color: '#10b981' } },
+                        y1: { position: 'right', suggestedMin: -100, suggestedMax: -20, grid: { drawOnChartArea: false }, ticks: { color: '#a855f7' } }
                     },
                     plugins: { legend: { labels: { color: '#f8fafc' } } }
                 }
             });
         }
 
-
         async function fetchData() {
             try {
                 const res = await fetch('api.php?endpoint=devices');
                 const devices = await res.json();
+                if (!Array.isArray(devices)) {
+                    console.error("fetchData: expected array, got", devices);
+                    return;
+                }
                 renderDeviceList(devices);
 
                 if (devices.length > 0) {
                     if (!selectedDevice || !devices.some(d => d.device_id === selectedDevice)) {
                         selectedDevice = devices[0].device_id;
                     }
-                    document.getElementById('cmd-target-device').innerText = selectedDevice;
+                    const targetEl = document.getElementById('cmd-target-device');
+                    if (targetEl) targetEl.innerText = selectedDevice;
                     await fetchTelemetryHistory(selectedDevice);
                 }
             } catch (err) {
@@ -574,6 +595,7 @@
 
         function renderDeviceList(devices) {
             const tbody = document.getElementById('device-table-body');
+            if (!tbody) return;
             tbody.innerHTML = '';
 
             let totalPackets = 0;
@@ -594,9 +616,12 @@
             }
             prevTotalPackets = totalPackets;
 
-            document.getElementById('total-devices').innerText = devices.length;
-            document.getElementById('online-devices').innerText = devices.filter(d => d.status === 'ONLINE').length;
-            document.getElementById('total-packets').innerText = totalPackets;
+            const elTotDev = document.getElementById('total-devices');
+            if (elTotDev) elTotDev.innerText = devices.length;
+            const elOnDev = document.getElementById('online-devices');
+            if (elOnDev) elOnDev.innerText = devices.filter(d => d.status === 'ONLINE').length;
+            const elTotPkt = document.getElementById('total-packets');
+            if (elTotPkt) elTotPkt.innerText = totalPackets;
 
             devices.forEach(d => {
                 const tr = document.createElement('tr');
@@ -605,15 +630,16 @@
 
                 tr.onclick = () => {
                     selectedDevice = d.device_id;
-                    document.getElementById('cmd-target-device').innerText = selectedDevice;
+                    const targetEl = document.getElementById('cmd-target-device');
+                    if (targetEl) targetEl.innerText = selectedDevice;
                     renderDeviceList(devices);
                     fetchTelemetryHistory(d.device_id);
                 };
 
-
                 const pendingBadge = d.pending_commands_count > 0 ? 
                     `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px;">⏳ 送信待ち (${d.pending_commands_count})</span>` : '';
 
+                const intervalText = d.current_interval_sec ? `${d.current_interval_sec}秒` : '15秒';
                 const rssiDisplay = d.last_rssi ? `${d.last_rssi} dBm` : '--';
                 let rssiColor = '#94a3b8';
                 if (d.last_rssi && d.last_rssi >= -65) rssiColor = '#10b981'; // 良好
@@ -631,7 +657,8 @@
                 tbody.appendChild(tr);
 
                 if (d.device_id === selectedDevice) {
-                    document.getElementById('cmd-current-interval').innerText = `${intervalText}`;
+                    const intEl = document.getElementById('cmd-current-interval');
+                    if (intEl) intEl.innerText = `${intervalText}`;
 
                     const pendingBox = document.getElementById('cmd-pending-box');
                     const successBox = document.getElementById('cmd-success-box');
@@ -641,22 +668,26 @@
                             commandPendingStartTimes[d.device_id] = Date.now();
                         }
                         const elapsedSec = Math.floor((Date.now() - commandPendingStartTimes[d.device_id]) / 1000);
-                        pendingBox.style.display = 'flex';
-                        successBox.style.display = 'none';
-                        document.getElementById('cmd-pending-text').innerText = 
-                            `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
+                        if (pendingBox) pendingBox.style.display = 'flex';
+                        if (successBox) successBox.style.display = 'none';
+                        const elTxt = document.getElementById('cmd-pending-text');
+                        if (elTxt) {
+                            elTxt.innerText = `⏳ コマンド送信待ちです (${elapsedSec}秒経過 - エッジの次回起床時に自動配信されます)`;
+                        }
                     } else {
                         if (lastPendingCount[d.device_id] > 0 && commandPendingStartTimes[d.device_id]) {
                             const totalSec = Math.floor((Date.now() - commandPendingStartTimes[d.device_id]) / 1000);
-                            pendingBox.style.display = 'none';
-                            successBox.style.display = 'block';
-                            document.getElementById('cmd-success-text').innerText = 
-                                `✅ コマンドがエッジデバイスに送信・適用されました (所要時間: ${totalSec}秒)`;
+                            if (pendingBox) pendingBox.style.display = 'none';
+                            if (successBox) successBox.style.display = 'block';
+                            const elTxt = document.getElementById('cmd-success-text');
+                            if (elTxt) {
+                                elTxt.innerText = `✅ コマンドがエッジデバイスに送信・適用されました (所要時間: ${totalSec}秒)`;
+                            }
                             delete commandPendingStartTimes[d.device_id];
-                            setTimeout(() => { successBox.style.display = 'none'; }, 5000);
+                            setTimeout(() => { if (successBox) successBox.style.display = 'none'; }, 5000);
                         } else {
                             if (!commandPendingStartTimes[d.device_id]) {
-                                pendingBox.style.display = 'none';
+                                if (pendingBox) pendingBox.style.display = 'none';
                             }
                         }
                     }
@@ -677,9 +708,14 @@
         }
 
         async function fetchTelemetryHistory(deviceId) {
+            if (!tempChartInstance || !batteryChartInstance) {
+                initCharts();
+            }
+
             const is24h = (currentChartRange === '24h');
             const rangeText = is24h ? '過去24時間推移' : 'リアルタイム直近20件';
-            document.getElementById('chart-device-title').innerText = `📊 テレメトリ推移 (${deviceId} - ${rangeText})`;
+            const titleElem = document.getElementById('chart-device-title');
+            if (titleElem) titleElem.innerText = `📊 テレメトリ推移 (${deviceId} - ${rangeText})`;
 
             const statsBox = document.getElementById('trend-24h-stats');
             if (statsBox) {
@@ -693,77 +729,104 @@
 
                 const res = await fetch(url);
                 const history = await res.json();
+
+                if (!Array.isArray(history)) {
+                    console.error("fetchTelemetryHistory: expected array but got", history);
+                    return;
+                }
                 
                 const labels = history.map(h => {
-                    const d = new Date(h.header.timestamp * 1000);
+                    const ts = (h.header && h.header.timestamp) ? h.header.timestamp : Date.now() / 1000;
+                    const d = new Date(ts * 1000);
                     if (is24h) {
                         return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
                     } else {
                         return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
                     }
                 });
-                const temps = history.map(h => h.metrics.temperature);
-                const humis = history.map(h => h.metrics.humidity);
-                const batts = history.map(h => h.metrics.battery_voltage);
-                const rssis = history.map(h => h.metrics.rssi);
 
-                tempChartInstance.data.labels = labels;
-                tempChartInstance.data.datasets[0].data = temps;
-                tempChartInstance.data.datasets[1].data = humis;
-                tempChartInstance.update();
+                const temps = history.map(h => (h.metrics && h.metrics.temperature !== undefined) ? h.metrics.temperature : null);
+                const humis = history.map(h => (h.metrics && h.metrics.humidity !== undefined) ? h.metrics.humidity : null);
+                const batts = history.map(h => (h.metrics && h.metrics.battery_voltage !== undefined) ? h.metrics.battery_voltage : null);
+                const rssis = history.map(h => (h.metrics && h.metrics.rssi !== undefined) ? h.metrics.rssi : null);
 
-                batteryChartInstance.data.labels = labels;
-                batteryChartInstance.data.datasets[0].data = batts;
-                batteryChartInstance.data.datasets[1].data = rssis;
-                batteryChartInstance.update();
+                if (tempChartInstance) {
+                    tempChartInstance.data.labels = labels;
+                    if (tempChartInstance.data.datasets[0]) tempChartInstance.data.datasets[0].data = temps;
+                    if (tempChartInstance.data.datasets[1]) tempChartInstance.data.datasets[1].data = humis;
+                    tempChartInstance.update();
+                }
+
+                if (batteryChartInstance) {
+                    batteryChartInstance.data.labels = labels;
+                    if (!batteryChartInstance.data.datasets[0]) {
+                        batteryChartInstance.data.datasets[0] = { label: 'バッテリ電圧 (V)', borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, data: [], tension: 0.3, yAxisID: 'y' };
+                    }
+                    if (!batteryChartInstance.data.datasets[1]) {
+                        batteryChartInstance.data.datasets[1] = { label: '電波強度 RSSI (dBm)', borderColor: '#a855f7', backgroundColor: 'transparent', borderDash: [4, 4], pointRadius: 3, data: [], tension: 0.3, yAxisID: 'y1' };
+                    }
+                    batteryChartInstance.data.datasets[0].data = batts;
+                    batteryChartInstance.data.datasets[1].data = rssis;
+                    batteryChartInstance.update();
+                }
 
                 if (history.length > 0) {
                     const latest = history[history.length - 1];
-                    const interval = latest.metrics.interval_sec || 15;
-                    const jstTimeStr = latest.header.time_jst || new Date(latest.header.timestamp * 1000).toLocaleString('ja-JP');
-                    const rssiVal = latest.metrics.rssi ? `${latest.metrics.rssi} dBm` : '--';
-                    document.getElementById('selected-device-meta').innerText = 
-                        `最新 (${jstTimeStr}): ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V / 📶 RSSI: ${rssiVal} (起動間隔: ${interval}秒)`;
+                    const interval = (latest.metrics && latest.metrics.interval_sec) ? latest.metrics.interval_sec : 15;
+                    const jstTimeStr = (latest.header && latest.header.time_jst) ? latest.header.time_jst : (latest.header ? new Date(latest.header.timestamp * 1000).toLocaleString('ja-JP') : '--');
+                    const tempStr = (latest.metrics && latest.metrics.temperature !== undefined) ? `${latest.metrics.temperature.toFixed(1)}℃` : '--';
+                    const battStr = (latest.metrics && latest.metrics.battery_voltage !== undefined) ? `${latest.metrics.battery_voltage.toFixed(2)}V` : '--';
+                    const rssiVal = (latest.metrics && latest.metrics.rssi !== undefined && latest.metrics.rssi !== 0) ? `${latest.metrics.rssi} dBm` : '--';
+                    
+                    const metaElem = document.getElementById('selected-device-meta');
+                    if (metaElem) {
+                        metaElem.innerText = `最新 (${jstTimeStr}): ${tempStr} / ${battStr} / 📶 RSSI: ${rssiVal} (起動間隔: ${interval}秒)`;
+                    }
 
                     if (is24h) {
-                        const validTemps = temps.filter(v => typeof v === 'number' && !isNaN(v));
-                        const validHumis = humis.filter(v => typeof v === 'number' && !isNaN(v));
-                        const validBatts = batts.filter(v => typeof v === 'number' && !isNaN(v));
-                        const validRssis = rssis.filter(v => typeof v === 'number' && !isNaN(v) && v !== 0);
+                        const validTemps = temps.filter(v => typeof v === 'number' && !isNaN(v) && v !== null);
+                        const validHumis = humis.filter(v => typeof v === 'number' && !isNaN(v) && v !== null);
+                        const validBatts = batts.filter(v => typeof v === 'number' && !isNaN(v) && v !== null);
+                        const validRssis = rssis.filter(v => typeof v === 'number' && !isNaN(v) && v !== null && v !== 0);
 
                         if (validTemps.length > 0) {
                             const maxT = Math.max(...validTemps).toFixed(1);
                             const minT = Math.min(...validTemps).toFixed(1);
                             const avgT = (validTemps.reduce((a, b) => a + b, 0) / validTemps.length).toFixed(1);
-                            document.getElementById('stat-temp-range').innerText = `${minT}℃ 〜 ${maxT}℃`;
-                            document.getElementById('stat-temp-avg').innerText = `${avgT}℃`;
+                            const el = document.getElementById('stat-temp-range');
+                            if (el) el.innerText = `${minT}℃ 〜 ${maxT}℃`;
+                            const elAvg = document.getElementById('stat-temp-avg');
+                            if (elAvg) elAvg.innerText = `${avgT}℃`;
                         }
                         if (validHumis.length > 0) {
                             const maxH = Math.max(...validHumis).toFixed(0);
                             const minH = Math.min(...validHumis).toFixed(0);
-                            document.getElementById('stat-humi-range').innerText = `${minH}% 〜 ${maxH}%`;
+                            const el = document.getElementById('stat-humi-range');
+                            if (el) el.innerText = `${minH}% 〜 ${maxH}%`;
                         }
                         if (validBatts.length > 0) {
                             const maxB = Math.max(...validBatts).toFixed(2);
                             const minB = Math.min(...validBatts).toFixed(2);
-                            document.getElementById('stat-batt-range').innerText = `${minB}V 〜 ${maxB}V`;
+                            const el = document.getElementById('stat-batt-range');
+                            if (el) el.innerText = `${minB}V 〜 ${maxB}V`;
                         }
                         if (validRssis.length > 0) {
                             const maxR = Math.max(...validRssis);
                             const minR = Math.min(...validRssis);
                             const avgR = (validRssis.reduce((a, b) => a + b, 0) / validRssis.length).toFixed(0);
-                            document.getElementById('stat-rssi-range').innerText = `${minR} 〜 ${maxR} dBm`;
-                            document.getElementById('stat-rssi-avg').innerText = `${avgR} dBm`;
+                            const el = document.getElementById('stat-rssi-range');
+                            if (el) el.innerText = `${minR} 〜 ${maxR} dBm`;
+                            const elAvg = document.getElementById('stat-rssi-avg');
+                            if (elAvg) elAvg.innerText = `${avgR} dBm`;
                         }
-                        document.getElementById('stat-total-points').innerText = `${history.length} 件`;
+                        const elPts = document.getElementById('stat-total-points');
+                        if (elPts) elPts.innerText = `${history.length} 件`;
                     }
                 }
             } catch (err) {
                 console.error("History fetch error:", err);
             }
         }
-
-
 
         async function sendRemoteCommand(action, params) {
             if (!selectedDevice) {
@@ -774,9 +837,10 @@
                 commandPendingStartTimes[selectedDevice] = Date.now();
                 const pendingBox = document.getElementById('cmd-pending-box');
                 const successBox = document.getElementById('cmd-success-box');
-                pendingBox.style.display = 'flex';
-                successBox.style.display = 'none';
-                document.getElementById('cmd-pending-text').innerText = "⏳ コマンド送信待ちです (0秒経過 - エッジの次回起床時に自動配信されます)";
+                if (pendingBox) pendingBox.style.display = 'flex';
+                if (successBox) successBox.style.display = 'none';
+                const elTxt = document.getElementById('cmd-pending-text');
+                if (elTxt) elTxt.innerText = "⏳ コマンド送信待ちです (0秒経過 - エッジの次回起床時に自動配信されます)";
 
                 const res = await fetch('api.php?endpoint=commands', {
                     method: 'POST',
@@ -794,7 +858,7 @@
                 } else {
                     alert(`コマンド送信エラー: ${data.message}`);
                     delete commandPendingStartTimes[selectedDevice];
-                    pendingBox.style.display = 'none';
+                    if (pendingBox) pendingBox.style.display = 'none';
                 }
             } catch (err) {
                 alert(`送信失敗: ${err}`);
@@ -802,7 +866,9 @@
             }
         }
 
+        document.addEventListener('DOMContentLoaded', initDashboard);
         window.onload = initDashboard;
     </script>
 </body>
 </html>
+
