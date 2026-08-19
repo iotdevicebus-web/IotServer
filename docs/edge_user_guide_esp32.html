@@ -528,9 +528,9 @@ classDiagram
             </div>
         </section>
 
-        <!-- 6. GMO クラウド本番サーバ連携 -->
+        <!-- 6. GMO クラウド本番サーバ連携 & Wi-Fi 設定 -->
         <section id="sec-6">
-            <h2>6. GMO クラウド本番サーバ連携 (`gontaro.org/iot/`)</h2>
+            <h2>6. GMO クラウド本番サーバ連携 (`gontaro.org/iot/`) & Wi-Fi 自動設定</h2>
             <p>エッジマイコンは、インターネット上の GMO クラウドサーバ（<code>https://www.gontaro.org/iot/api.php</code>）と HTTPS ポート 443 でセキュアに通信します。</p>
 
             <pre><code>// edge/platform/esp32/AppConst.hpp の設定
@@ -541,11 +541,25 @@ namespace AppConst {
     constexpr const char* API_COMMAND_ACK_PATH = "/iot/api.php?endpoint=commands/ack";
     constexpr const char* WIFI_SSID             = "ControlAdLab";
     constexpr const char* WIFI_PASSWORD         = "ControlAD";
+    constexpr const char* WIFIMANAGER_AP_NAME  = "IotEdgeDevice";
 }</code></pre>
+
+            <div class="card" style="border: 1px solid var(--accent); margin-top: 20px;">
+                <h3 style="color: var(--accent);">📶 WiFiManager (自局名: IotEdgeDevice) による簡単 Wi-Fi 設定手順</h3>
+                <p>設置環境の Wi-Fi ルーターを変更したい場合、プログラムを書き換えることなく本体スイッチのみで接続先を設定できます：</p>
+                <ol>
+                    <li>外部スイッチ（<strong>GPIO 4</strong>）またはオンボード <strong>[BOOT] スイッチ（GPIO 0）</strong> を<strong>押したまま</strong>リセット（または電源投入）します。</li>
+                    <li>e-Paper 画面に <code>Wi-Fi SETUP MODE / SSID: IotEdgeDevice / IP: 192.168.4.1</code> と表示されます。</li>
+                    <li>スマートフォンや PC の Wi-Fi 検索から <strong>「<code>IotEdgeDevice</code>」</strong> を選択して接続します。</li>
+                    <li>自動で設定画面（キャプティブポータル <code>http://192.168.4.1</code>）が開きます。周囲の Wi-Fi ルーターをスキャンして選択し、パスワードを入力して <strong>[Save]</strong> をクリックします。</li>
+                    <li>接続成功後、認証情報は <strong>NVS（不揮発性メモリ）</strong> に自動保存され、次回以降は自動でそのルーターに接続されます。</li>
+                </ol>
+            </div>
         </section>
 
         <!-- 7. クイックスタート (ビルド & 書込) -->
         <section id="sec-7">
+
             <h2>7. クイックスタート (ビルド & 書込)</h2>
             <div class="card">
                 <h3>ファームウェア書き込み手順</h3>

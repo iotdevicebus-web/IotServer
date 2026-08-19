@@ -49,9 +49,17 @@ void hal_epaper_show_test_screen(void);
 void hal_epaper_show_status(const epd_status_info_t* info);
 
 /**
+ * @brief WiFiManager 設定モード画面を表示 (自局AP名・接続手順)
+ * @param ap_name 自局AP名 (例: IotEdgeDevice)
+ * @param ip_addr ポータルIPアドレス (例: 192.168.4.1)
+ */
+void hal_epaper_show_wifi_setup_screen(const char* ap_name, const char* ip_addr);
+
+/**
  * @brief e-Paper 画面を白で全画面クリア
  */
 void hal_epaper_clear(void);
+
 
 /**
  * @brief e-Paper コントローラを Deep Sleep (超低消費電力モード) に移行

@@ -7,6 +7,8 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <Preferences.h>
+#include <WiFiManager.h>
 #include <sys/time.h>
 #include <time.h>
 #include <esp_heap_caps.h>
@@ -39,6 +41,73 @@ static WiFiClientSecure s_secure_client;
 static RTC_DATA_ATTR uint32_t s_boot_count = 0;
 static RTC_DATA_ATTR uint32_t s_sleep_interval_sec = AppConst::DEEP_SLEEP_DURATION_SEC;
 static SemaphoreHandle_t s_wifi_event_sem = nullptr;
+static Preferences s_prefs;
+
+/**
+ * @brief NVS (不揮発性メモリ) から Wi-Fi 接続情報を読み込み
+ */
+static void load_wifi_credentials(String &ssid, String &password) {
+    s_prefs.begin(AppConst::NVS_NAMESPACE_WIFI, true);
+    ssid = s_prefs.getString(AppConst::NVS_KEY_SSID, AppConst::WIFI_SSID);
+    password = s_prefs.getString(AppConst::NVS_KEY_PASSWORD, AppConst::WIFI_PASSWORD);
+    s_prefs.end();
+    Serial.printf("[NVS] Loaded Wi-Fi Config -> SSID: '%s'\n", ssid.c_str());
+}
+
+/**
+ * @brief NVS (不揮発性メモリ) へ Wi-Fi 接続情報を永続保存
+ */
+static void save_wifi_credentials(const String &ssid, const String &password) {
+    s_prefs.begin(AppConst::NVS_NAMESPACE_WIFI, false);
+    s_prefs.putString(AppConst::NVS_KEY_SSID, ssid);
+    s_prefs.putString(AppConst::NVS_KEY_PASSWORD, password);
+    s_prefs.end();
+    Serial.printf("[NVS] >>> Successfully Saved Wi-Fi Credentials to NVS! SSID: '%s' <<<\n", ssid.c_str());
+}
+
+/**
+ * @brief リセット起動時のスイッチ押下状態を判定 (GPIO 4 または GPIO 0)
+ */
+static bool check_wifi_setup_switch_pressed() {
+    pinMode(AppConst::PIN_WAKEUP_BUTTON, INPUT_PULLUP);
+    pinMode(AppConst::PIN_BOOT_BUTTON, INPUT_PULLUP);
+    delay(50); // チャタリング防止
+    bool pressed = (digitalRead(AppConst::PIN_WAKEUP_BUTTON) == LOW || digitalRead(AppConst::PIN_BOOT_BUTTON) == LOW);
+    if (pressed) {
+        Serial.println("[SETUP_BTN] >>> Switch Press Detected at Startup! Entering WiFiManager Setup Mode... <<<");
+    }
+    return pressed;
+}
+
+/**
+ * @brief WiFiManager キャプティブポータルを起動して周囲のルータを検索・接続設定
+ */
+static void run_wifimanager_portal() {
+    Serial.println("====================================================");
+    Serial.printf("[WIFIMANAGER] Starting WiFiManager AP: '%s' ...\n", AppConst::WIFIMANAGER_AP_NAME);
+    Serial.println("[WIFIMANAGER] Open Browser & Go to: http://192.168.4.1");
+    Serial.println("====================================================");
+
+    // 1. e-Paper 画面に設定モード案内を表示
+    hal_epaper_show_wifi_setup_screen(AppConst::WIFIMANAGER_AP_NAME, "192.168.4.1");
+
+    // 2. WiFiManager 初期化 & ポータル起動
+    WiFiManager wm;
+    wm.setConfigPortalTimeout(300); // 5分間タイムアウト設定 (未操作時は通常起動へ復帰)
+    wm.setBreakAfterConfig(true);
+
+    bool res = wm.startConfigPortal(AppConst::WIFIMANAGER_AP_NAME);
+
+    if (res && WiFi.status() == WL_CONNECTED) {
+        String new_ssid = WiFi.SSID();
+        String new_pass = WiFi.psk();
+        Serial.printf("[WIFIMANAGER] >>> Connected to new AP: '%s'! <<<\n", new_ssid.c_str());
+        save_wifi_credentials(new_ssid, new_pass);
+        Serial.println("[WIFIMANAGER] Configuration saved to NVS. Proceeding to normal operation...");
+    } else {
+        Serial.println("[WIFIMANAGER] Config portal timed out or cancelled. Proceeding with existing configuration...");
+    }
+}
 
 /**
  * @brief Wi-Fi イベントハンドラ (Callee 側での即時通知)
@@ -123,14 +192,17 @@ static void configure_mtls_credentials() {
 
 
 /**
- * @brief イベント駆動型 Wi-Fi 接続 (ポーリング完全不使用)
+ * @brief イベント駆動型 Wi-Fi 接続 (NVS 設定優先・ポーリング完全不使用)
  */
 static bool connect_wifi_event_driven() {
-    Serial.printf("[WIFI] Connecting to SSID: '%s' (Event-Driven Mode, Zero-Polling) ...\n", AppConst::WIFI_SSID);
+    String curr_ssid, curr_password;
+    load_wifi_credentials(curr_ssid, curr_password);
+
+    Serial.printf("[WIFI] Connecting to SSID: '%s' (Event-Driven Mode, Zero-Polling) ...\n", curr_ssid.c_str());
     s_wifi_event_sem = xSemaphoreCreateBinary();
     WiFi.onEvent(on_wifi_event);
     WiFi.mode(WIFI_STA);
-    WiFi.begin(AppConst::WIFI_SSID, AppConst::WIFI_PASSWORD);
+    WiFi.begin(curr_ssid.c_str(), curr_password.c_str());
 
     // ハードウェアイベント発生まで FreeRTOS セマフォでブロック待機
     bool connected = (xSemaphoreTake(s_wifi_event_sem, pdMS_TO_TICKS(AppConst::WIFI_TIMEOUT_MS)) == pdTRUE);
@@ -144,6 +216,7 @@ static bool connect_wifi_event_driven() {
         return false;
     }
 }
+
 
 /**
  * @brief サーバレスポンスからスリープ秒数およびリモートコマンドを解析・適用
@@ -309,17 +382,21 @@ void setup() {
             Serial.printf("[WAKEUP] ⚡ Initial Power-On Reset (Cause: %d)\n", wakeup_cause);
             break;
     }
-    Serial.println("====================================================");
+    // 2. リセットスタート時のスイッチ判定 (WiFiManager キャプティブポータル起動)
+    if (check_wifi_setup_switch_pressed()) {
+        run_wifimanager_portal();
+    }
 
-    // 2. 8MB PSRAM 大容量バッファ & 0ms 時計初期化
+    // 3. 8MB PSRAM 大容量バッファ & 0ms 時計初期化
     init_psram_buffer();
     init_fast_clock();
 
-    // 3. mTLS 相互TLS証明書の設定
+    // 4. mTLS 相互TLS証明書の設定
     configure_mtls_credentials();
 
-    // 4. イベント駆動型 Wi-Fi 接続 (ゼロポーリング)
+    // 5. イベント駆動型 Wi-Fi 接続 (NVS設定優先・ゼロポーリング)
     bool connected = connect_wifi_event_driven();
+
 
     // 5. テレメトリデータの作成
     telemetry_data_t data;

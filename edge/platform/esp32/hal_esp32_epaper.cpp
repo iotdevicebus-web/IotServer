@@ -257,11 +257,80 @@ void hal_epaper_show_status(const epd_status_info_t* info) {
     Serial.printf("[EPD] Status Screen updated in %u ms.\n", elapsed_ms);
 }
 
+/**
+ * @brief WiFiManager 設定モード画面を表示 (自局AP名・接続手順)
+ */
+void hal_epaper_show_wifi_setup_screen(const char* ap_name, const char* ip_addr) {
+    if (!hal_epaper_init()) return;
+
+    Serial.printf("[EPD] Rendering WiFi Setup Mode Screen (AP: %s, IP: %s)...\n", ap_name, ip_addr);
+    uint32_t start_ms = millis();
+
+    s_display.setFullWindow();
+    s_display.firstPage();
+    do {
+        s_display.fillScreen(GxEPD_WHITE);
+
+        // 1. ヘッダー帯 (黒帯 白文字)
+        s_display.fillRect(0, 0, 200, 22, GxEPD_BLACK);
+        s_display.setTextColor(GxEPD_WHITE);
+        s_display.setTextSize(1);
+        s_display.setCursor(18, 7);
+        s_display.print(">>> Wi-Fi SETUP MODE <<<");
+
+        // 2. 接続案内
+        s_display.setTextColor(GxEPD_BLACK);
+        s_display.setTextSize(1);
+        s_display.setCursor(6, 28);
+        s_display.print("1. Connect Phone/PC to AP:");
+
+        // AP 名枠 (強調表示)
+        s_display.drawRoundRect(4, 38, 192, 28, 4, GxEPD_BLACK);
+        s_display.setTextSize(2);
+        s_display.setCursor(10, 44);
+        s_display.print(ap_name ? ap_name : "IotEdgeDevice");
+
+        // 3. ブラウザ案内
+        s_display.setTextSize(1);
+        s_display.setCursor(6, 74);
+        s_display.print("2. Open Browser & Go to:");
+
+        // IP アドレス枠
+        s_display.drawRoundRect(4, 84, 192, 28, 4, GxEPD_BLACK);
+        s_display.setTextSize(2);
+        s_display.setCursor(10, 90);
+        s_display.print(ip_addr ? ip_addr : "192.168.4.1");
+
+        // 4. 設定手順ガイド枠
+        s_display.drawRect(4, 120, 192, 60, GxEPD_BLACK);
+        s_display.setTextSize(1);
+        s_display.setCursor(8, 126);
+        s_display.print("* Scan & Select your Wi-Fi");
+        s_display.setCursor(8, 140);
+        s_display.print("* Enter Password & Save");
+        s_display.setCursor(8, 154);
+        s_display.print("* Credentials saved to NVS");
+        s_display.setCursor(8, 168);
+        s_display.print("* Auto-reboot on finish");
+
+        // 5. フッター帯 (黒帯 白文字)
+        s_display.fillRect(0, 185, 200, 15, GxEPD_BLACK);
+        s_display.setTextColor(GxEPD_WHITE);
+        s_display.setTextSize(1);
+        s_display.setCursor(14, 189);
+        s_display.print("Waiting for Web Portal...");
+
+    } while (s_display.nextPage());
+
+    uint32_t elapsed_ms = millis() - start_ms;
+    Serial.printf("[EPD] WiFi Setup Screen updated in %u ms.\n", elapsed_ms);
+}
 
 /**
  * @brief 全画面クリア (白画面)
  */
 void hal_epaper_clear(void) {
+
     if (!hal_epaper_init()) return;
 
     Serial.println("[EPD] Clearing screen (Full White)...");

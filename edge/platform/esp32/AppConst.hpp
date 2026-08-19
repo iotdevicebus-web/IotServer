@@ -13,6 +13,7 @@ namespace AppConst {
 
 // --- ハードウェア GPIO ピン設定 ---
 constexpr uint8_t PIN_WAKEUP_BUTTON = 4;    // 外部起床スイッチ (RTC_IO Active LOW)
+constexpr uint8_t PIN_BOOT_BUTTON   = 0;    // オンボード BOOT スイッチ (GPIO 0 Active LOW)
 constexpr uint8_t PIN_STATUS_LED    = 48;   // オンボードステータス LED (GPIO 48)
 constexpr uint32_t SERIAL_BAUDRATE  = 115200;
 
@@ -39,6 +40,13 @@ constexpr const char* API_TELEMETRY_PATH = "/iot/api.php?endpoint=telemetry";
 constexpr const char* API_COMMAND_ACK_PATH = "/iot/api.php?endpoint=commands/ack";
 constexpr const char* WIFI_SSID          = "ControlAdLab";
 constexpr const char* WIFI_PASSWORD      = "ControlAD";
+
+// --- WiFiManager & NVS 永続化設定 ---
+constexpr const char* WIFIMANAGER_AP_NAME  = "IotEdgeDevice";
+constexpr const char* NVS_NAMESPACE_WIFI   = "wifi_config";
+constexpr const char* NVS_KEY_SSID         = "ssid";
+constexpr const char* NVS_KEY_PASSWORD     = "password";
+
 
 
 // --- 時刻同期 & スリープ設定 ---
