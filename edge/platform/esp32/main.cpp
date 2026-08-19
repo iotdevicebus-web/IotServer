@@ -364,6 +364,7 @@ void setup() {
         epd_status_info_t epd_info;
         epd_info.device_id = data.device_id;
         epd_info.ip_address = ip_str.c_str();
+        epd_info.rssi = (int8_t)data.rssi;
         epd_info.boot_count = s_boot_count;
         epd_info.interval_sec = s_sleep_interval_sec;
         epd_info.temperature = data.temperature;
@@ -372,6 +373,7 @@ void setup() {
         epd_info.server_status = connected ? "200 OK (HTTPS)" : "Buffered";
         epd_info.time_jst_str = jst_time_buf;
         hal_epaper_show_status(&epd_info);
+
     }
     hal_epaper_sleep(); // 表示更新後、e-Paper を超低消費電力スリープへ
 

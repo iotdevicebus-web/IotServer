@@ -60,7 +60,8 @@ try {
             last_seen INTEGER,
             registered_at INTEGER,
             total_telemetries INTEGER DEFAULT 0,
-            current_interval_sec INTEGER DEFAULT 15
+            current_interval_sec INTEGER DEFAULT 15,
+            last_rssi INTEGER DEFAULT 0
         );
 
         CREATE TABLE IF NOT EXISTS telemetry (
@@ -88,6 +89,8 @@ try {
             result TEXT
         );
     ");
+
+    try { $pdo->exec("ALTER TABLE devices ADD COLUMN last_rssi INTEGER DEFAULT 0"); } catch (Exception $e) {}
 
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
@@ -133,11 +136,11 @@ try {
             $savedInterval = (int)$devRow['current_interval_sec'];
             if ($savedInterval > 0) $nextSleepSec = $savedInterval;
 
-            $upStmt = $pdo->prepare("UPDATE devices SET firmware_version = ?, status = 'ONLINE', last_seen = ?, total_telemetries = ? WHERE device_id = ?");
-            $upStmt->execute([$fwVersion, $ts, $total, $deviceId]);
+            $upStmt = $pdo->prepare("UPDATE devices SET firmware_version = ?, status = 'ONLINE', last_seen = ?, total_telemetries = ?, last_rssi = ? WHERE device_id = ?");
+            $upStmt->execute([$fwVersion, $ts, $total, $rssi, $deviceId]);
         } else {
-            $inStmt = $pdo->prepare("INSERT INTO devices (device_id, device_type, firmware_version, status, last_seen, registered_at, total_telemetries, current_interval_sec) VALUES (?, 'ESP32-S3', ?, 'ONLINE', ?, ?, 1, ?)");
-            $inStmt->execute([$deviceId, $fwVersion, $ts, $ts, $interval]);
+            $inStmt = $pdo->prepare("INSERT INTO devices (device_id, device_type, firmware_version, status, last_seen, registered_at, total_telemetries, current_interval_sec, last_rssi) VALUES (?, 'ESP32-S3', ?, 'ONLINE', ?, ?, 1, ?, ?)");
+            $inStmt->execute([$deviceId, $fwVersion, $ts, $ts, $interval, $rssi]);
         }
 
 
@@ -161,13 +164,19 @@ try {
             }
         }
 
+        // コマンド配信済みに更新
+        if (!empty($pendingCmds)) {
+            $upCmdStmt = $pdo->prepare("UPDATE commands SET status = 'DELIVERED' WHERE device_id = ? AND status = 'PENDING'");
+            $upCmdStmt->execute([$deviceId]);
+        }
+
+        // レスポンス返却 (動的スリープ秒数 + 保留コマンド + サーバ同期時刻)
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode([
             'status' => 'OK',
             'message' => 'Telemetry accepted',
-            'server_time' => time(),
+            'server_time' => $ts,
             'sleep_interval_sec' => $nextSleepSec,
-            'ota' => ['available' => false],
             'commands' => $pendingCmds
         ]);
         exit;
@@ -196,6 +205,7 @@ try {
                 'registered_at' => (int)$d['registered_at'],
                 'total_telemetries' => (int)$d['total_telemetries'],
                 'current_interval_sec' => (int)$d['current_interval_sec'],
+                'last_rssi' => (int)($d['last_rssi'] ?? 0),
                 'pending_commands_count' => $pendingCount
             ];
         }

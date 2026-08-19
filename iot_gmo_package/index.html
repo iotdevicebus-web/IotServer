@@ -327,15 +327,17 @@
                         <tr>
                             <th>Device ID</th>
                             <th>FW</th>
+                            <th>電波 (RSSI)</th>
                             <th>起動間隔</th>
                             <th>Status</th>
                             <th>Packets</th>
                         </tr>
                     </thead>
                     <tbody id="device-table-body">
-                        <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">データ取得中...</td></tr>
+                        <tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">データ取得中...</td></tr>
                     </tbody>
                 </table>
+
             </div>
 
             <!-- 双方向リモートコマンド送信パネル -->
@@ -386,8 +388,10 @@
                 <div>🌡 24h 温度: <strong id="stat-temp-range" style="color: var(--accent-red);">--</strong> (平均: <strong id="stat-temp-avg" style="color: var(--text-primary);">--</strong>)</div>
                 <div>💧 24h 湿度: <strong id="stat-humi-range" style="color: var(--accent-cyan);">--</strong></div>
                 <div>🔋 24h バッテリ: <strong id="stat-batt-range" style="color: var(--accent-green);">--</strong></div>
+                <div>📶 24h RSSI: <strong id="stat-rssi-range" style="color: var(--accent-purple);">--</strong> (平均: <strong id="stat-rssi-avg" style="color: var(--text-primary);">--</strong>)</div>
                 <div>📊 データ点数: <strong id="stat-total-points" style="color: var(--accent-amber);">-- 件</strong></div>
             </div>
+
 
             <div class="chart-container">
                 <canvas id="tempChart"></canvas>
@@ -521,7 +525,18 @@
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             fill: true,
                             data: [],
-                            tension: 0.3
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '電波強度 RSSI (dBm)',
+                            borderColor: '#a855f7',
+                            backgroundColor: 'transparent',
+                            borderDash: [4, 4],
+                            pointRadius: 3,
+                            data: [],
+                            tension: 0.3,
+                            yAxisID: 'y1'
                         }
                     ]
                 },
@@ -530,12 +545,14 @@
                     maintainAspectRatio: false,
                     scales: {
                         x: { grid: { color: '#334155' }, ticks: { color: '#94a3b8' } },
-                        y: { min: 3.0, max: 4.5, grid: { color: '#334155' }, ticks: { color: '#10b981' } }
+                        y: { position: 'left', min: 3.0, max: 4.5, grid: { color: '#334155' }, ticks: { color: '#10b981' } },
+                        y1: { position: 'right', min: -100, max: -20, grid: { drawOnChartArea: false }, ticks: { color: '#a855f7' } }
                     },
                     plugins: { legend: { labels: { color: '#f8fafc' } } }
                 }
             });
         }
+
 
         async function fetchData() {
             try {
@@ -597,11 +614,16 @@
                 const pendingBadge = d.pending_commands_count > 0 ? 
                     `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 4px;">⏳ 送信待ち (${d.pending_commands_count})</span>` : '';
 
-                const intervalText = d.current_interval_sec ? `${d.current_interval_sec}秒` : '15秒';
+                const rssiDisplay = d.last_rssi ? `${d.last_rssi} dBm` : '--';
+                let rssiColor = '#94a3b8';
+                if (d.last_rssi && d.last_rssi >= -65) rssiColor = '#10b981'; // 良好
+                else if (d.last_rssi && d.last_rssi >= -80) rssiColor = '#f59e0b'; // 普通
+                else if (d.last_rssi) rssiColor = '#ef4444'; // 弱い
 
                 tr.innerHTML = `
                     <td style="font-weight: 600;">${d.device_id}${pendingBadge}</td>
                     <td><span style="background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${d.firmware_version}</span></td>
+                    <td><span style="color: ${rssiColor}; font-weight: 600; font-size: 12px;">📶 ${rssiDisplay}</span></td>
                     <td><span style="color: var(--accent-cyan); font-weight: 600;">⏱ ${intervalText}</span></td>
                     <td><span class="badge-online">${d.status}</span></td>
                     <td>${d.total_telemetries}</td>
@@ -683,6 +705,7 @@
                 const temps = history.map(h => h.metrics.temperature);
                 const humis = history.map(h => h.metrics.humidity);
                 const batts = history.map(h => h.metrics.battery_voltage);
+                const rssis = history.map(h => h.metrics.rssi);
 
                 tempChartInstance.data.labels = labels;
                 tempChartInstance.data.datasets[0].data = temps;
@@ -691,19 +714,22 @@
 
                 batteryChartInstance.data.labels = labels;
                 batteryChartInstance.data.datasets[0].data = batts;
+                batteryChartInstance.data.datasets[1].data = rssis;
                 batteryChartInstance.update();
 
                 if (history.length > 0) {
                     const latest = history[history.length - 1];
                     const interval = latest.metrics.interval_sec || 15;
                     const jstTimeStr = latest.header.time_jst || new Date(latest.header.timestamp * 1000).toLocaleString('ja-JP');
+                    const rssiVal = latest.metrics.rssi ? `${latest.metrics.rssi} dBm` : '--';
                     document.getElementById('selected-device-meta').innerText = 
-                        `最新 (${jstTimeStr}): ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm | 起動間隔: ${interval}秒)`;
+                        `最新 (${jstTimeStr}): ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V / 📶 RSSI: ${rssiVal} (起動間隔: ${interval}秒)`;
 
                     if (is24h) {
                         const validTemps = temps.filter(v => typeof v === 'number' && !isNaN(v));
                         const validHumis = humis.filter(v => typeof v === 'number' && !isNaN(v));
                         const validBatts = batts.filter(v => typeof v === 'number' && !isNaN(v));
+                        const validRssis = rssis.filter(v => typeof v === 'number' && !isNaN(v) && v !== 0);
 
                         if (validTemps.length > 0) {
                             const maxT = Math.max(...validTemps).toFixed(1);
@@ -722,6 +748,13 @@
                             const minB = Math.min(...validBatts).toFixed(2);
                             document.getElementById('stat-batt-range').innerText = `${minB}V 〜 ${maxB}V`;
                         }
+                        if (validRssis.length > 0) {
+                            const maxR = Math.max(...validRssis);
+                            const minR = Math.min(...validRssis);
+                            const avgR = (validRssis.reduce((a, b) => a + b, 0) / validRssis.length).toFixed(0);
+                            document.getElementById('stat-rssi-range').innerText = `${minR} 〜 ${maxR} dBm`;
+                            document.getElementById('stat-rssi-avg').innerText = `${avgR} dBm`;
+                        }
                         document.getElementById('stat-total-points').innerText = `${history.length} 件`;
                     }
                 }
@@ -729,6 +762,7 @@
                 console.error("History fetch error:", err);
             }
         }
+
 
 
         async function sendRemoteCommand(action, params) {

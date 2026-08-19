@@ -19,6 +19,7 @@ extern "C" {
 typedef struct {
     const char* device_id;       // デバイスID (例: DEV-ESP32-001)
     const char* ip_address;      // IPアドレス (例: 192.168.3.65)
+    int8_t rssi;                 // Wi-Fi 電波強度 (dBm, 例: -55)
     uint32_t boot_count;         // 起動回数
     uint32_t interval_sec;       // スリープ間隔 (秒)
     float temperature;           // 温度 (℃)
@@ -27,6 +28,7 @@ typedef struct {
     const char* server_status;   // 通信状態 (例: 200 OK, CONNECTING, etc.)
     const char* time_jst_str;    // 日本標準時 (JST) 時刻文字列 (例: "2026/08/19 14:05:22")
 } epd_status_info_t;
+
 
 
 /**

@@ -159,13 +159,18 @@ void hal_epaper_show_status(const epd_status_info_t* info) {
         s_display.setCursor(160, 7);
         s_display.printf("#%u", info->boot_count);
 
-        // 2. ネットワーク情報 (IPアドレス)
+        // 2. ネットワーク情報 (IPアドレス & RSSI)
         s_display.setTextColor(GxEPD_BLACK);
         s_display.setTextSize(1);
         s_display.setCursor(6, 26);
-        s_display.printf("IP: %s", info->ip_address ? info->ip_address : "Connecting...");
+        if (info->rssi != 0 && info->rssi != -99) {
+            s_display.printf("IP: %s (%ddBm)", info->ip_address ? info->ip_address : "Connecting...", info->rssi);
+        } else {
+            s_display.printf("IP: %s", info->ip_address ? info->ip_address : "Connecting...");
+        }
 
         s_display.drawFastHLine(4, 37, 192, GxEPD_BLACK);
+
 
         // 3. メインセンサー値 (TextSize 3 の大型フォントで温度・湿度を表示)
         // 温度 (Temperature)
