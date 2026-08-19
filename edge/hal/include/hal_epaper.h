@@ -25,7 +25,9 @@ typedef struct {
     float humidity;              // 湿度 (%)
     float battery_voltage;       // バッテリー電圧 (V)
     const char* server_status;   // 通信状態 (例: 200 OK, CONNECTING, etc.)
+    const char* time_jst_str;    // 日本標準時 (JST) 時刻文字列 (例: "2026/08/19 14:05:22")
 } epd_status_info_t;
+
 
 /**
  * @brief e-Paper ディスプレイの初期化

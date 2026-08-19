@@ -99,14 +99,21 @@ static void psram_buffer_push(const telemetry_data_t *data) {
  * @brief 爆速時刻セット (Callee 側デバッグライト配置)
  */
 static void init_fast_clock() {
+    setenv("TZ", "JST-9", 1);
+    tzset();
+
     struct timeval tv = { .tv_sec = AppConst::FAST_CLOCK_INIT_TIMESTAMP, .tv_usec = 0 };
     settimeofday(&tv, nullptr);
     time_t now = time(nullptr);
-    Serial.printf("[CLOCK] Current System Time set to: %lu (2026-08-17 12:00:00 UTC)\n", (unsigned long)now);
+    struct tm timeinfo;
+    localtime_r(&now, &timeinfo);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &timeinfo);
+    Serial.printf("[CLOCK] System Time Initialized: %lu (JST: %s)\n", (unsigned long)now, buf);
 }
 
 /**
- * @brief mTLS 認証情報の設定 (Callee 側デバッグライト配置)
+ * @brief HTTPS 認証情報の設定 (Callee 側デバッグライト配置)
  */
 static void configure_mtls_credentials() {
     Serial.println("[SECURITY] Configuring HTTPS TLS Secure Client...");
@@ -142,15 +149,41 @@ static bool connect_wifi_event_driven() {
  * @brief サーバレスポンスからスリープ秒数およびリモートコマンドを解析・適用
  */
 static void process_server_response(const String &resp) {
+    // 0. サーバ同期時刻 (server_time) の抽出 & JST時計セット
+    int timePos = resp.indexOf("\"server_time\":");
+    if (timePos >= 0) {
+        int valStart = timePos + 14;
+        while (valStart < (int)resp.length() && (resp[valStart] == ' ' || resp[valStart] == ':')) {
+            valStart++;
+        }
+        int valEnd = valStart;
+        while (valEnd < (int)resp.length() && isDigit(resp[valEnd])) {
+            valEnd++;
+        }
+        if (valEnd > valStart) {
+            time_t srvTime = (time_t)resp.substring(valStart, valEnd).toInt();
+            if (srvTime > 1000000000) {
+                struct timeval tv = { .tv_sec = srvTime, .tv_usec = 0 };
+                settimeofday(&tv, nullptr);
+                struct tm timeinfo;
+                localtime_r(&srvTime, &timeinfo);
+                char buf[32];
+                strftime(buf, sizeof(buf), "%Y/%m/%d %H:%M:%S", &timeinfo);
+                Serial.printf("[CLOCK] ⏰ >>> Clock Synchronized with Server: %lu (JST: %s) <<<\n",
+                    (unsigned long)srvTime, buf);
+            }
+        }
+    }
+
     // 1. トップレベルまたは C2 コマンド内の sleep_interval_sec の抽出
     int keyPos = resp.indexOf("\"sleep_interval_sec\":");
     if (keyPos >= 0) {
         int valStart = keyPos + 21;
-        while (valStart < resp.length() && (resp[valStart] == ' ' || resp[valStart] == ':')) {
+        while (valStart < (int)resp.length() && (resp[valStart] == ' ' || resp[valStart] == ':')) {
             valStart++;
         }
         int valEnd = valStart;
-        while (valEnd < resp.length() && isDigit(resp[valEnd])) {
+        while (valEnd < (int)resp.length() && isDigit(resp[valEnd])) {
             valEnd++;
         }
         if (valEnd > valStart) {
@@ -164,6 +197,7 @@ static void process_server_response(const String &resp) {
             }
         }
     }
+
 
     // 2. コマンド ACK の返却 (command_id が含まれる場合)
     int cmdIdPos = resp.indexOf("\"command_id\":\"");
@@ -318,6 +352,15 @@ void setup() {
         hal_epaper_show_test_screen();
     } else {
         String ip_str = (connected && WiFi.status() == WL_CONNECTED) ? WiFi.localIP().toString() : "Disconnected";
+        
+        // 日本標準時 (JST: UTC+9) の日時文字列を生成
+        time_t now = time(nullptr);
+        struct tm timeinfo;
+        localtime_r(&now, &timeinfo);
+        char jst_time_buf[32];
+        strftime(jst_time_buf, sizeof(jst_time_buf), "%Y/%m/%d %H:%M:%S", &timeinfo);
+        Serial.printf("[EPD] Displaying JST Time on Screen: %s\n", jst_time_buf);
+
         epd_status_info_t epd_info;
         epd_info.device_id = data.device_id;
         epd_info.ip_address = ip_str.c_str();
@@ -326,10 +369,12 @@ void setup() {
         epd_info.temperature = data.temperature;
         epd_info.humidity = data.humidity;
         epd_info.battery_voltage = data.battery_voltage;
-        epd_info.server_status = connected ? "200 OK (mTLS)" : "Buffered";
+        epd_info.server_status = connected ? "200 OK (HTTPS)" : "Buffered";
+        epd_info.time_jst_str = jst_time_buf;
         hal_epaper_show_status(&epd_info);
     }
     hal_epaper_sleep(); // 表示更新後、e-Paper を超低消費電力スリープへ
+
 
     // 8. Deep Sleep 移行 (全処理完了により割り込み再有効化)
     enter_power_saving_sleep();

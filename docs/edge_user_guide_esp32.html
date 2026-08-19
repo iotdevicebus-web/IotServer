@@ -472,13 +472,17 @@ graph LR
                     <li><strong>初回起動 (Boot #1):</strong> 二重外枠、反転タイトル帯、幾何学テスト図形、市松模様を描画してハードウェア初期動作を完全確認。</li>
                     <li><strong>稼働中 (Boot #2〜):</strong>
                         <ul>
-                            <li><strong>最上段:</strong> <code>DEV-ESP32-001 (Boot #3)</code></li>
-                            <li><strong>中央段 (特大フォント):</strong> <code>TEMP: 25.4 C</code> / <code>HUMI: 58.2 %</code> (TextSize 3: 高さ 24px)</li>
-                            <li><strong>下段:</strong> <code>BATT: 4.05V (95%)  SLEEP: 15s</code> (TextSize 2)</li>
-                            <li><strong>最下段ステータス枠:</strong> <code>SERVER: www.gontaro.org  200 OK (HTTPS)</code></li>
+                            <li><strong>最上段 (反転ヘッダー):</strong> <code>DEV-ESP32-001 #3</code></li>
+                            <li><strong>第2段 (ネットワーク):</strong> <code>IP: 192.168.3.65</code></li>
+                            <li><strong>第3段 (特大フォント):</strong> <code>TEMP: 25.4 C</code> / <code>HUMI: 58.2 %</code> (TextSize 3: 高さ 24px)</li>
+                            <li><strong>第4段 (電源・周期):</strong> <code>4.05V  Intv:15s</code> (TextSize 2)</li>
+                            <li><strong>第5段 (時刻同期):</strong> <code>JST: 2026/08/19 14:05:22</code> (日本標準時・サーバ自動同期)</li>
+                            <li><strong>第6段 (サーバ枠):</strong> <code>SERVER: www.gontaro.org</code> / <code>200 OK (HTTPS)</code></li>
+                            <li><strong>最下段 (暗号化帯):</strong> <code>mTLS SECURE</code> (白抜きフォント)</li>
                         </ul>
                     </li>
                     <li><strong>超低消費電力制御:</strong> 描画完了後に <code>epd.hibernate()</code> を実行し、コントローラをディープスリープ（消費電力 0mA）に移行。</li>
+
                 </ul>
             </div>
         </section>

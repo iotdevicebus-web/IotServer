@@ -148,73 +148,82 @@ void hal_epaper_show_status(const epd_status_info_t* info) {
     do {
         s_display.fillScreen(GxEPD_WHITE);
 
-        // 1. ヘッダー帯 (デバイスIDを大型 TextSize 2 で表示)
-        s_display.fillRect(0, 0, 200, 28, GxEPD_BLACK);
+        // 1. ヘッダー帯 (デバイスID & 起動回数を表示)
+        s_display.fillRect(0, 0, 200, 24, GxEPD_BLACK);
         s_display.setTextColor(GxEPD_WHITE);
         s_display.setTextSize(2);
-        s_display.setCursor(8, 6);
+        s_display.setCursor(6, 4);
         s_display.print(info->device_id ? info->device_id : "DEV-ESP32");
 
-        // 2. ネットワーク情報 (IPアドレス & 起動回数)
-        s_display.setTextColor(GxEPD_BLACK);
         s_display.setTextSize(1);
-        s_display.setCursor(6, 33);
-        s_display.printf("IP: %s", info->ip_address ? info->ip_address : "Connecting...");
-        s_display.setCursor(144, 33);
+        s_display.setCursor(160, 8);
         s_display.printf("#%u", info->boot_count);
 
-        s_display.drawFastHLine(4, 46, 192, GxEPD_BLACK);
+        // 2. ネットワーク情報 (IPアドレス)
+        s_display.setTextColor(GxEPD_BLACK);
+        s_display.setTextSize(1);
+        s_display.setCursor(6, 28);
+        s_display.printf("IP: %s", info->ip_address ? info->ip_address : "Connecting...");
+
+        s_display.drawFastHLine(4, 39, 192, GxEPD_BLACK);
 
         // 3. メインセンサー値 (TextSize 3 の超大型フォントで温度・湿度を表示)
         // 温度 (Temperature)
         s_display.setTextSize(3);
-        s_display.setCursor(6, 52);
+        s_display.setCursor(6, 44);
         s_display.printf("%.1f", info->temperature);
 
         // 単位 ℃
         s_display.setTextSize(1);
-        s_display.setCursor(82, 52);
+        s_display.setCursor(82, 44);
         s_display.print("o");
         s_display.setTextSize(2);
-        s_display.setCursor(90, 56);
+        s_display.setCursor(90, 48);
         s_display.print("C");
 
         // 縦区切り線
-        s_display.drawFastVLine(104, 50, 32, GxEPD_BLACK);
+        s_display.drawFastVLine(104, 42, 34, GxEPD_BLACK);
 
         // 湿度 (Humidity)
         s_display.setTextSize(3);
-        s_display.setCursor(114, 52);
+        s_display.setCursor(114, 44);
         s_display.printf("%.0f", info->humidity);
 
         // 単位 %
         s_display.setTextSize(2);
-        s_display.setCursor(168, 56);
+        s_display.setCursor(168, 48);
         s_display.print("%");
 
-        s_display.drawFastHLine(4, 88, 192, GxEPD_BLACK);
+        s_display.drawFastHLine(4, 79, 192, GxEPD_BLACK);
 
         // 4. バッテリー & 周期 (TextSize 2 の中型フォントで明瞭表示)
         s_display.setTextSize(2);
-        s_display.setCursor(6, 94);
+        s_display.setCursor(6, 83);
         s_display.printf("%.2fV", info->battery_voltage);
 
-        s_display.setCursor(108, 94);
+        s_display.setCursor(108, 83);
         s_display.printf("Intv:%us", info->interval_sec);
 
-        s_display.drawFastHLine(4, 116, 192, GxEPD_BLACK);
+        s_display.drawFastHLine(4, 102, 192, GxEPD_BLACK);
 
-        // 5. サーバ通信ステータス枠 (TextSize 2 で結果を強調)
-        s_display.drawRoundRect(4, 122, 192, 44, 4, GxEPD_BLACK);
+        // 5. 日本標準時 (JST) 時刻表示
         s_display.setTextSize(1);
-        s_display.setCursor(10, 128);
+        s_display.setCursor(6, 107);
+        s_display.printf("JST: %s", (info->time_jst_str && strlen(info->time_jst_str) > 0) ? info->time_jst_str : "2026/08/19 14:00:00");
+
+        s_display.drawFastHLine(4, 120, 192, GxEPD_BLACK);
+
+        // 6. サーバ通信ステータス枠 (TextSize 2 で結果を強調)
+        s_display.drawRoundRect(4, 124, 192, 44, 4, GxEPD_BLACK);
+        s_display.setTextSize(1);
+        s_display.setCursor(10, 129);
         s_display.printf("SERVER: %s", AppConst::SERVER_HOST);
 
         s_display.setTextSize(2);
-        s_display.setCursor(10, 142);
+        s_display.setCursor(10, 143);
         s_display.printf("%s", info->server_status ? info->server_status : "ONLINE");
 
-        // 6. フッター帯 (ゼロトラスト暗号化ステータス)
+        // 7. フッター帯 (ゼロトラスト暗号化ステータス)
         s_display.fillRect(0, 172, 200, 28, GxEPD_BLACK);
         s_display.setTextColor(GxEPD_WHITE);
         s_display.setTextSize(2);
@@ -226,6 +235,7 @@ void hal_epaper_show_status(const epd_status_info_t* info) {
     uint32_t elapsed_ms = millis() - start_ms;
     Serial.printf("[EPD] Status Screen updated in %u ms.\n", elapsed_ms);
 }
+
 
 /**
  * @brief 全画面クリア (白画面)
