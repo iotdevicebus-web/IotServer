@@ -362,10 +362,11 @@
 
                     <div class="cmd-actions">
                         <button class="btn btn-cyan" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 10})">⏱ スリープ10秒に変更</button>
+                        <button class="btn btn-purple" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 30})">⏱ スリープ30秒に変更</button>
                         <button class="btn btn-amber" onclick="sendRemoteCommand('CONFIG_UPDATE', {sleep_interval_sec: 60})">⏱ スリープ60秒に変更</button>
-                        <button class="btn btn-purple" onclick="sendRemoteCommand('SELF_TEST', {})">🔍 セルフテスト実行</button>
                         <button class="btn btn-red" onclick="sendRemoteCommand('REBOOT', {})">⚡ 即時再起動</button>
                     </div>
+
                 </div>
             </div>
         </div>
