@@ -208,6 +208,8 @@ try {
     // 4. テレメトリ履歴取得: GET /api/v1/telemetry/history
     if ($endpoint === 'telemetry/history' && $method === 'GET') {
         $deviceId = $_GET['device_id'] ?? '';
+        $range = $_GET['range'] ?? '';
+        $hours = isset($_GET['hours']) ? (int)$_GET['hours'] : 0;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
 
         if (empty($deviceId)) {
@@ -217,9 +219,16 @@ try {
             exit;
         }
 
-        $stmt = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT ?");
-        $stmt->execute([$deviceId, $limit]);
-        $rows = $stmt->fetchAll();
+        if ($range === '24h' || $hours === 24 || $range === '1d') {
+            $since = time() - (24 * 3600);
+            $stmt = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? AND timestamp >= ? ORDER BY id ASC LIMIT 1000");
+            $stmt->execute([$deviceId, $since]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM telemetry WHERE device_id = ? ORDER BY id DESC LIMIT ?");
+            $stmt->execute([$deviceId, $limit]);
+            $rows = array_reverse($stmt->fetchAll());
+        }
 
         $history = [];
         foreach ($rows as $r) {
@@ -230,6 +239,7 @@ try {
                     'seq_no' => (int)$r['seq_no'],
                     'timestamp' => $tsVal,
                     'time_jst' => date('Y/m/d H:i:s', $tsVal),
+                    'time_hm' => date('H:i', $tsVal),
                     'firmware_version' => '1.0.0'
                 ],
                 'metrics' => [
@@ -247,6 +257,7 @@ try {
         echo json_encode($history);
         exit;
     }
+
 
 
     // 4.5. 古いテレメトリ履歴クリア: /telemetry/clear

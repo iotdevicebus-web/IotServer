@@ -187,6 +187,27 @@
             margin-top: 10px;
         }
 
+        .btn-tab {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-tab.active {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        }
+        .btn-tab:hover:not(.active) {
+            color: #f8fafc;
+            background: rgba(255, 255, 255, 0.06);
+        }
+
         .toast {
             position: fixed;
             bottom: 24px;
@@ -287,18 +308,32 @@
             </div>
         </div>
 
-        <!-- 右列: 時系列チャート -->
+        <!-- 右列: 時系列チャート (リアルタイム & 24時間推移) -->
         <div class="card">
-            <div class="card-header">
-                <div class="card-title" id="chart-device-title">📊 テレメトリ推移 (選択デバイス)</div>
+            <div class="card-header" style="flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div class="card-title" id="chart-device-title">📊 テレメトリ推移 (選択デバイス)</div>
+                    <div style="display: flex; gap: 4px; background: #0f172a; padding: 3px; border-radius: 8px; border: 1px solid #334155;">
+                        <button id="btn-range-24h" class="btn-tab active" onclick="setChartRange('24h')">📈 過去24時間推移</button>
+                        <button id="btn-range-realtime" class="btn-tab" onclick="setChartRange('realtime')">⏱ 直近20件</button>
+                    </div>
+                </div>
                 <span id="selected-device-meta" style="color: var(--text-secondary); font-size: 13px;"></span>
+            </div>
+
+            <!-- 24時間統計サマリーバー (24hモード時に表示) -->
+            <div id="trend-24h-stats" style="display: flex; background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; border-radius: 8px; padding: 10px 16px; margin-bottom: 14px; font-size: 12px; color: var(--text-secondary); justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>🌡 24h 温度: <strong id="stat-temp-range" style="color: var(--accent-red);">--</strong> (平均: <strong id="stat-temp-avg" style="color: var(--text-primary);">--</strong>)</div>
+                <div>💧 24h 湿度: <strong id="stat-humi-range" style="color: var(--accent-cyan);">--</strong></div>
+                <div>🔋 24h バッテリ: <strong id="stat-batt-range" style="color: var(--accent-green);">--</strong></div>
+                <div>📊 データ点数: <strong id="stat-total-points" style="color: var(--accent-amber);">-- 件</strong></div>
             </div>
 
             <div class="chart-container">
                 <canvas id="tempChart"></canvas>
             </div>
 
-            <div class="chart-container" style="height: 200px;">
+            <div class="chart-container" style="height: 200px; margin-top: 14px;">
                 <canvas id="batteryChart"></canvas>
             </div>
         </div>
@@ -310,8 +345,10 @@
         let selectedDevice = null;
         let tempChartInstance = null;
         let batteryChartInstance = null;
+        let currentChartRange = '24h'; // デフォルト: 過去24時間推移
         let lastPendingCount = {};
         let commandPendingStartTimes = {};
+
 
         async function initDashboard() {
             initCharts();
@@ -493,16 +530,42 @@
             });
         }
 
+        function setChartRange(range) {
+            currentChartRange = range;
+            const btn24h = document.getElementById('btn-range-24h');
+            const btnRt = document.getElementById('btn-range-realtime');
+            if (btn24h) btn24h.classList.toggle('active', range === '24h');
+            if (btnRt) btnRt.classList.toggle('active', range === 'realtime');
+            if (selectedDevice) {
+                fetchTelemetryHistory(selectedDevice);
+            }
+        }
+
         async function fetchTelemetryHistory(deviceId) {
-            document.getElementById('chart-device-title').innerText = `📊 テレメトリ推移 (${deviceId})`;
+            const is24h = (currentChartRange === '24h');
+            const rangeText = is24h ? '過去24時間推移' : 'リアルタイム直近20件';
+            document.getElementById('chart-device-title').innerText = `📊 テレメトリ推移 (${deviceId} - ${rangeText})`;
+
+            const statsBox = document.getElementById('trend-24h-stats');
+            if (statsBox) {
+                statsBox.style.display = is24h ? 'flex' : 'none';
+            }
+
             try {
-                const res = await fetch(`api.php?endpoint=telemetry/history&device_id=${deviceId}&limit=20`);
+                const url = is24h 
+                    ? `api.php?endpoint=telemetry/history&device_id=${deviceId}&range=24h`
+                    : `api.php?endpoint=telemetry/history&device_id=${deviceId}&limit=20`;
+
+                const res = await fetch(url);
                 const history = await res.json();
                 
-                history.reverse();
                 const labels = history.map(h => {
                     const d = new Date(h.header.timestamp * 1000);
-                    return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                    if (is24h) {
+                        return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+                    } else {
+                        return d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                    }
                 });
                 const temps = history.map(h => h.metrics.temperature);
                 const humis = history.map(h => h.metrics.humidity);
@@ -523,12 +586,37 @@
                     const jstTimeStr = latest.header.time_jst || new Date(latest.header.timestamp * 1000).toLocaleString('ja-JP');
                     document.getElementById('selected-device-meta').innerText = 
                         `最新 (${jstTimeStr}): ${latest.metrics.temperature.toFixed(1)}℃ / ${latest.metrics.battery_voltage.toFixed(2)}V (RSSI: ${latest.metrics.rssi}dBm | 起動間隔: ${interval}秒)`;
-                }
 
+                    if (is24h) {
+                        const validTemps = temps.filter(v => typeof v === 'number' && !isNaN(v));
+                        const validHumis = humis.filter(v => typeof v === 'number' && !isNaN(v));
+                        const validBatts = batts.filter(v => typeof v === 'number' && !isNaN(v));
+
+                        if (validTemps.length > 0) {
+                            const maxT = Math.max(...validTemps).toFixed(1);
+                            const minT = Math.min(...validTemps).toFixed(1);
+                            const avgT = (validTemps.reduce((a, b) => a + b, 0) / validTemps.length).toFixed(1);
+                            document.getElementById('stat-temp-range').innerText = `${minT}℃ 〜 ${maxT}℃`;
+                            document.getElementById('stat-temp-avg').innerText = `${avgT}℃`;
+                        }
+                        if (validHumis.length > 0) {
+                            const maxH = Math.max(...validHumis).toFixed(0);
+                            const minH = Math.min(...validHumis).toFixed(0);
+                            document.getElementById('stat-humi-range').innerText = `${minH}% 〜 ${maxH}%`;
+                        }
+                        if (validBatts.length > 0) {
+                            const maxB = Math.max(...validBatts).toFixed(2);
+                            const minB = Math.min(...validBatts).toFixed(2);
+                            document.getElementById('stat-batt-range').innerText = `${minB}V 〜 ${maxB}V`;
+                        }
+                        document.getElementById('stat-total-points').innerText = `${history.length} 件`;
+                    }
+                }
             } catch (err) {
                 console.error("History fetch error:", err);
             }
         }
+
 
         async function sendRemoteCommand(action, params) {
             if (!selectedDevice) {
